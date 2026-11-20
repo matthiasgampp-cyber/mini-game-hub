@@ -44,7 +44,8 @@
       this.root.className = "relative w-full h-full flex items-center justify-center bg-[#04040a] overflow-hidden";
 
       this.canvas = document.createElement("canvas");
-      this.canvas.className = "block w-full h-full touch-none";
+      this.canvas.className = "block w-full h-full touch-none select-none";
+      this.canvas.style.touchAction = "none";
       this.canvasCtx = this.canvas.getContext("2d");
 
       this.menuOverlay = document.createElement("div");
@@ -65,6 +66,19 @@
       this.canvas.addEventListener("pointercancel", this.onPointerUp);
 
       this.resize();
+    },
+
+    getSafeBottomInset() {
+      const probe = document.createElement("div");
+      probe.style.position = "fixed";
+      probe.style.bottom = "0";
+      probe.style.height = "env(safe-area-inset-bottom, 0px)";
+      probe.style.pointerEvents = "none";
+      probe.style.visibility = "hidden";
+      document.body.appendChild(probe);
+      const inset = probe.getBoundingClientRect().height || 0;
+      probe.remove();
+      return inset;
     },
 
     renderMenu() {
@@ -166,15 +180,21 @@
       this.canvas.height = Math.floor(h * dpr);
       this.canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const pad = 12;
-      const availW = Math.max(180, w - pad * 2);
-      const availH = Math.max(180, h - pad * 2);
+      const isMobileLike = w < 768 || navigator.maxTouchPoints > 0;
+      const safeBottom = this.getSafeBottomInset();
+      const sidePad = 12;
+      const topPad = 12;
+      // Extra Puffer unten, damit die untere Navigationsleiste am Handy nicht versehentlich ausgelöst wird
+      const bottomPad = isMobileLike ? Math.max(36, safeBottom + 28) : 14;
+
+      const availW = Math.max(180, w - sidePad * 2);
+      const availH = Math.max(180, h - topPad - bottomPad);
 
       if (this.playerCount >= 3) {
         const size = Math.min(availW, availH);
         this.arena = {
           x: (w - size) / 2,
-          y: (h - size) / 2,
+          y: topPad + (availH - size) / 2,
           size,
           width: size,
           height: size,
@@ -182,8 +202,8 @@
         };
       } else {
         this.arena = {
-          x: pad,
-          y: pad,
+          x: sidePad,
+          y: topPad,
           size: Math.min(availW, availH),
           width: availW,
           height: availH,
@@ -196,8 +216,8 @@
 
     syncPaddleDimensions() {
       const isSq = this.arena.isSquare;
-      const paddleLen = Math.max(54, Math.min(110, (isSq ? this.arena.size : this.arena.width) * 0.23));
-      const paddleThick = 11;
+      const paddleLen = Math.max(58, Math.min(114, (isSq ? this.arena.size : this.arena.width) * 0.24));
+      const paddleThick = 12;
 
       for (const p of this.players) {
         if (p.edge === "bottom" || p.edge === "top") {
@@ -209,7 +229,7 @@
           } else {
             p.x = Math.max(this.arena.x, Math.min(this.arena.x + this.arena.width - p.w, p.x));
           }
-          p.y = p.edge === "bottom" ? this.arena.y + this.arena.height - 20 : this.arena.y + 10;
+          p.y = p.edge === "bottom" ? this.arena.y + this.arena.height - 22 : this.arena.y + 10;
         } else {
           p.w = paddleThick;
           p.h = paddleLen;
@@ -219,7 +239,7 @@
           } else {
             p.y = Math.max(this.arena.y, Math.min(this.arena.y + this.arena.height - p.h, p.y));
           }
-          p.x = p.edge === "left" ? this.arena.x + 10 : this.arena.x + this.arena.width - 20;
+          p.x = p.edge === "left" ? this.arena.x + 10 : this.arena.x + this.arena.width - 22;
         }
       }
     },
@@ -245,7 +265,7 @@
           x: 0,
           y: 0,
           w: 80,
-          h: 11,
+          h: 12,
           posInitialized: false
         });
       }
@@ -289,6 +309,7 @@
 
     handlePointerDown(e) {
       if (this.phase !== "playing" || this.paused) return;
+      e.preventDefault();
       this.canvas.setPointerCapture?.(e.pointerId);
       const rect = this.canvas.getBoundingClientRect();
       this.touches.set(e.pointerId, { x: e.clientX - rect.left, y: e.clientY - rect.top });
@@ -296,6 +317,7 @@
 
     handlePointerMove(e) {
       if (!this.touches.has(e.pointerId)) return;
+      e.preventDefault();
       const rect = this.canvas.getBoundingClientRect();
       this.touches.set(e.pointerId, { x: e.clientX - rect.left, y: e.clientY - rect.top });
     },
@@ -592,7 +614,7 @@
         const label = this.arena.isSquare
           ? `${p.name}: ${p.eliminated ? "OUT" : "♥".repeat(p.lives)}`
           : `${p.name}: ${p.score}`;
-        if (p.edge === "bottom") ctx.fillText(label, w / 2, this.arena.y + this.arena.height - 34);
+        if (p.edge === "bottom") ctx.fillText(label, w / 2, this.arena.y + this.arena.height - 36);
         if (p.edge === "top") ctx.fillText(label, w / 2, this.arena.y + 38);
       }
 
