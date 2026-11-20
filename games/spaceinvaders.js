@@ -53,6 +53,7 @@
       this.keys = { left: false, right: false, fire: false };
       this.pointerActive = false;
       this.pointerTargetX = null;
+      this.isTouchDevice = false;
 
       this.enemies = [];
       this.enemyDir = 1;
@@ -178,6 +179,7 @@
     updateWeaponUi() {
       const spec = WEAPON_SPECS[this.currentWeapon] || WEAPON_SPECS.laser;
       const statusParts = [];
+      if (this.isTouchDevice) statusParts.push("AUTO-FEUER");
       if (this.hasShield) statusParts.push("SCHILD");
       if (this.invulnTimer > 0) statusParts.push(`UNVERWUNDBAR ${this.invulnTimer.toFixed(1)}s`);
       const extra = statusParts.length ? ` • ${statusParts.join(" • ")}` : "";
@@ -185,6 +187,10 @@
       if (this.weaponBadge) {
         this.weaponBadge.textContent = `WAFFE: ${spec.label} (${this.unlockedWeapons.size}/4)${extra}`;
         this.weaponBadge.style.color = this.invulnTimer > 0 ? "#fde047" : spec.color;
+      }
+
+      if (this.fireBtn) {
+        this.fireBtn.classList.toggle("hidden", this.isTouchDevice);
       }
     },
 
@@ -202,6 +208,9 @@
     resize() {
       if (!this.root || !this.canvas || !this.canvasCtx) return;
       const rect = this.root.getBoundingClientRect();
+      this.isTouchDevice = rect.width < 768 || (navigator.maxTouchPoints || 0) > 0;
+      this.updateWeaponUi();
+
       const hudH = this.hud.getBoundingClientRect().height || 22;
       const barH = this.controlsBar.getBoundingClientRect().height || 42;
       const availW = Math.max(240, rect.width - 12);
@@ -611,7 +620,8 @@
 
       p.fireCooldown = Math.max(0, p.fireCooldown - dt);
       const spec = WEAPON_SPECS[this.currentWeapon] || WEAPON_SPECS.laser;
-      if (this.keys.fire && p.fireCooldown <= 0) {
+      const shouldFire = this.isTouchDevice || this.keys.fire;
+      if (shouldFire && p.fireCooldown <= 0) {
         this.firePlayerWeapon();
         p.fireCooldown = spec.cooldown;
       }
@@ -893,7 +903,6 @@
       ctx.save();
       ctx.translate(b.x, b.y);
 
-      // Subtiler Energie-Schimmer unter dem UFO-Mutterschiff
       const beamGrad = ctx.createLinearGradient(0, hh * 0.2, 0, hh + 16);
       beamGrad.addColorStop(0, `rgba(56, 189, 248, ${(0.22 + pulse * 0.14).toFixed(2)})`);
       beamGrad.addColorStop(1, "rgba(56, 189, 248, 0)");
@@ -906,7 +915,6 @@
       ctx.closePath();
       ctx.fill();
 
-      // Glaskuppel oben
       const domeGrad = ctx.createLinearGradient(0, -hh * 0.95, 0, -1);
       domeGrad.addColorStop(0, "#bae6fd");
       domeGrad.addColorStop(0.55, "#38bdf8");
@@ -920,19 +928,16 @@
       ctx.fill();
       ctx.stroke();
 
-      // Glanzlicht auf der Kuppel
       ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
       ctx.beginPath();
       ctx.ellipse(-hw * 0.14, -hh * 0.52, hw * 0.16, hh * 0.14, -0.35, 0, Math.PI * 2);
       ctx.fill();
 
-      // Innerer Reaktor-Kern in der Kuppel
       ctx.fillStyle = "#fde047";
       ctx.beginPath();
       ctx.arc(0, -4, 4.5 + pulse * 1.2, 0, Math.PI * 2);
       ctx.fill();
 
-      // Metallischer Unterteller / Haupt-Rumpf
       const hullGrad = ctx.createLinearGradient(0, -4, 0, hh * 0.75);
       hullGrad.addColorStop(0, "#f43f5e");
       hullGrad.addColorStop(0.55, "#be123c");
@@ -945,14 +950,12 @@
       ctx.fill();
       ctx.stroke();
 
-      // Metallischer Randstreifen
       ctx.strokeStyle = "#fde68a";
       ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.ellipse(0, 2, hw * 0.84, hh * 0.24, 0, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Animierte Lauflichter am UFO-Rand
       const lightCount = 7;
       const activeIdx = Math.floor(this.animClock * 10) % lightCount;
       for (let i = 0; i < lightCount; i++) {
@@ -966,7 +969,6 @@
         ctx.fill();
       }
 
-      // Lebensbalken über dem UFO-Boss
       const barW = b.w;
       const barH = 5;
       const hpRatio = Math.max(0, b.hp / b.maxHp);
