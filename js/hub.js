@@ -105,9 +105,14 @@
     }
   };
 
+  let controlMode = storage.get("control_mode", "buttons"); // "buttons" | "touch"
+  const heldControls = { left: false, right: false, up: false, down: false };
+  const jumpListeners = new Set();
+
   const games = new Map();
   let activeGameId = null;
   let isPaused = false;
+  let globalPadEl = null;
 
   const dom = {
     hubView: document.getElementById("hub-view"),
@@ -115,6 +120,7 @@
     stage: document.getElementById("game-stage"),
     gameGrid: document.getElementById("game-grid"),
     homeBtn: document.getElementById("hub-home-btn"),
+    controlModeBtn: document.getElementById("control-mode-btn"),
     pauseBtn: document.getElementById("pause-toggle-btn"),
     soundBtn: document.getElementById("sound-toggle-btn"),
     headerTitle: document.getElementById("header-title"),
@@ -124,6 +130,139 @@
     restartFromPauseBtn: document.getElementById("restart-from-pause-btn"),
     exitToHubBtn: document.getElementById("exit-to-hub-btn")
   };
+
+  function dispatchKey(type, key, code) {
+    window.dispatchEvent(
+      new KeyboardEvent(type, {
+        key,
+        code,
+        bubbles: true,
+        cancelable: true
+      })
+    );
+  }
+
+  function releaseAllHeldControls() {
+    if (heldControls.left) {
+      heldControls.left = false;
+      dispatchKey("keyup", "ArrowLeft", "ArrowLeft");
+    }
+    if (heldControls.right) {
+      heldControls.right = false;
+      dispatchKey("keyup", "ArrowRight", "ArrowRight");
+    }
+    if (heldControls.up) {
+      heldControls.up = false;
+      dispatchKey("keyup", "ArrowUp", "ArrowUp");
+    }
+    if (heldControls.down) {
+      heldControls.down = false;
+      dispatchKey("keyup", "ArrowDown", "ArrowDown");
+    }
+  }
+
+  function triggerGlobalJump() {
+    dispatchKey("keydown", " ", "Space");
+    setTimeout(() => dispatchKey("keyup", " ", "Space"), 45);
+    for (const fn of jumpListeners) {
+      try {
+        fn();
+      } catch {
+        // Ignorieren
+      }
+    }
+  }
+
+  function syncControlUI() {
+    if (dom.controlModeBtn) {
+      dom.controlModeBtn.classList.toggle("hidden", !activeGameId);
+      dom.controlModeBtn.textContent =
+        controlMode === "buttons" ? "🎮 Buttons" : "👆 Nur Touch";
+    }
+    if (globalPadEl) {
+      const showPad = Boolean(activeGameId) && !isPaused && controlMode === "buttons";
+      globalPadEl.classList.toggle("hidden", !showPad);
+      if (!showPad) releaseAllHeldControls();
+    }
+  }
+
+  function setControlMode(nextMode) {
+    controlMode = nextMode === "touch" ? "touch" : "buttons";
+    storage.set("control_mode", controlMode);
+    if (controlMode !== "buttons") {
+      releaseAllHeldControls();
+    }
+    syncControlUI();
+  }
+
+  function ensureGlobalPad() {
+    if (globalPadEl || !dom.stage) return;
+
+    const pad = document.createElement("div");
+    pad.id = "global-mini-controls";
+    pad.className =
+      "hidden pointer-events-none absolute inset-x-2 bottom-2 z-20 flex items-end justify-between gap-2 touch-none select-none";
+    pad.innerHTML = `
+      <div class="pointer-events-auto flex items-center gap-1.5">
+        <button type="button" data-gpad="left" aria-label="Links" class="w-10 h-10 rounded-xl border border-cyan-300/35 bg-slate-950/80 text-cyan-200 font-bold text-sm active:scale-95 active:bg-cyan-500/30 touch-none select-none">◀</button>
+        <button type="button" data-gpad="right" aria-label="Rechts" class="w-10 h-10 rounded-xl border border-cyan-300/35 bg-slate-950/80 text-cyan-200 font-bold text-sm active:scale-95 active:bg-cyan-500/30 touch-none select-none">▶</button>
+        <button type="button" data-gpad="up" aria-label="Hoch" class="w-10 h-10 rounded-xl border border-sky-300/35 bg-slate-950/80 text-sky-200 font-bold text-sm active:scale-95 active:bg-sky-500/30 touch-none select-none">▲</button>
+        <button type="button" data-gpad="down" aria-label="Runter" class="w-10 h-10 rounded-xl border border-sky-300/35 bg-slate-950/80 text-sky-200 font-bold text-sm active:scale-95 active:bg-sky-500/30 touch-none select-none">▼</button>
+      </div>
+      <div class="pointer-events-auto flex items-center">
+        <button type="button" data-gpad="jump" aria-label="Springen" class="px-3 h-10 rounded-xl border border-cyan-300/50 bg-cyan-400/90 text-slate-950 font-orbitron text-[10px] font-black uppercase tracking-wider shadow-lg active:scale-95 touch-none select-none">Springen</button>
+      </div>
+    `;
+
+    const dirMap = {
+      left: { key: "ArrowLeft", code: "ArrowLeft" },
+      right: { key: "ArrowRight", code: "ArrowRight" },
+      up: { key: "ArrowUp", code: "ArrowUp" },
+      down: { key: "ArrowDown", code: "ArrowDown" }
+    };
+
+    pad.querySelectorAll("[data-gpad]").forEach((btn) => {
+      const action = btn.getAttribute("data-gpad");
+
+      const press = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!activeGameId || isPaused || controlMode !== "buttons") return;
+        sound.ensureContext();
+
+        if (action === "jump") {
+          triggerGlobalJump();
+          return;
+        }
+
+        const spec = dirMap[action];
+        if (!spec) return;
+        if (!heldControls[action]) {
+          heldControls[action] = true;
+          dispatchKey("keydown", spec.key, spec.code);
+        }
+      };
+
+      const release = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const spec = dirMap[action];
+        if (!spec) return;
+        if (heldControls[action]) {
+          heldControls[action] = false;
+          dispatchKey("keyup", spec.key, spec.code);
+        }
+      };
+
+      btn.addEventListener("pointerdown", press);
+      btn.addEventListener("pointerup", release);
+      btn.addEventListener("pointercancel", release);
+      btn.addEventListener("pointerleave", release);
+    });
+
+    dom.stage.appendChild(pad);
+    globalPadEl = pad;
+  }
 
   function updateSoundButton() {
     if (!dom.soundBtn) return;
@@ -135,6 +274,19 @@
       gameId,
       stage: dom.stage,
       sound,
+      controls: {
+        get mode() {
+          return controlMode;
+        },
+        held: heldControls,
+        onJump(cb) {
+          if (typeof cb === "function") {
+            jumpListeners.add(cb);
+            return () => jumpListeners.delete(cb);
+          }
+          return () => {};
+        }
+      },
       storage: {
         get: (k, fb) => storage.get(`${gameId}_${k}`, fb),
         set: (k, v) => storage.set(`${gameId}_${k}`, v)
@@ -165,7 +317,6 @@
     }
 
     for (const game of list) {
-      const badgeColor = game.accent || "cyan";
       const card = document.createElement("button");
       card.type = "button";
       card.className = "game-card text-left p-5 flex flex-col justify-between gap-4";
@@ -195,6 +346,8 @@
   }
 
   function destroyActiveGame() {
+    releaseAllHeldControls();
+    jumpListeners.clear();
     if (!activeGameId) return;
     const current = games.get(activeGameId);
     if (current && typeof current.destroy === "function") {
@@ -206,8 +359,10 @@
     }
     activeGameId = null;
     isPaused = false;
+    globalPadEl = null;
     dom.pauseOverlay.classList.add("hidden");
     dom.stage.innerHTML = "";
+    syncControlUI();
   }
 
   function launchGame(gameId) {
@@ -234,6 +389,9 @@
     if (typeof game.init === "function") {
       game.init(ctx);
     }
+    ensureGlobalPad();
+    syncControlUI();
+
     if (typeof game.resize === "function") {
       game.resize();
     }
@@ -246,6 +404,8 @@
     if (!activeGameId || isPaused) return;
     const game = games.get(activeGameId);
     isPaused = true;
+    releaseAllHeldControls();
+    syncControlUI();
     dom.pauseBtn.textContent = "Weiter";
     dom.pauseOverlay.classList.remove("hidden");
     if (game && typeof game.pause === "function") {
@@ -257,6 +417,7 @@
     if (!activeGameId || !isPaused) return;
     const game = games.get(activeGameId);
     isPaused = false;
+    syncControlUI();
     dom.pauseBtn.textContent = "Pause";
     dom.pauseOverlay.classList.add("hidden");
     if (game && typeof game.resume === "function") {
@@ -273,6 +434,7 @@
     dom.pauseBtn.classList.add("hidden");
     dom.headerTitle.textContent = "NEON ARCADE HUB";
     dom.headerSubtitle.textContent = "Modular Mini Game Collection";
+    syncControlUI();
     renderGameCards();
   }
 
@@ -309,6 +471,10 @@
     }
   });
 
+  dom.controlModeBtn?.addEventListener("click", () => {
+    sound.ensureContext();
+    setControlMode(controlMode === "buttons" ? "touch" : "buttons");
+  });
   dom.homeBtn?.addEventListener("click", exitToHub);
   dom.exitToHubBtn?.addEventListener("click", exitToHub);
   dom.pauseBtn?.addEventListener("click", () => {
@@ -325,5 +491,6 @@
   });
 
   updateSoundButton();
+  syncControlUI();
   renderGameCards();
 })();
