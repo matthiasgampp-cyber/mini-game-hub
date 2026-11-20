@@ -1,0 +1,74 @@
+:root {
+  --bg-dark: #04040a;
+  --panel-bg: rgba(10, 15, 30, 0.85);
+  --neon-cyan: #22d3ee;
+  --neon-pink: #f472b6;
+  --neon-green: #4ade80;
+  --neon-yellow: #facc15;
+}
+
+html,
+body {
+  background-color: var(--bg-dark);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.font-orbitron {
+  font-family: "Orbitron", sans-serif;
+}
+
+.font-rajdhani {
+  font-family: "Rajdhani", sans-serif;
+}
+
+.touch-action-none,
+#game-stage,
+#game-stage canvas {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.neon-text-cyan {
+  text-shadow:
+    0 0 8px rgba(34, 211, 238, 0.55),
+    0 0 22px rgba(34, 211, 238, 0.25);
+}
+
+.neon-text-pink {
+  text-shadow:
+    0 0 8px rgba(244, 114, 182, 0.55),
+    0 0 22px rgba(244, 114, 182, 0.25);
+}
+
+.game-card {
+  position: relative;
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.92), rgba(6, 10, 22, 0.96));
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  border-radius: 1rem;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(34, 211, 238, 0.65);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.15);
+}
+
+.game-card:active {
+  transform: scale(0.98);
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.neon-pulse {
+  animation: pulseGlow 2.4s ease-in-out infinite;
+}
