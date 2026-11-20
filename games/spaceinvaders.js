@@ -11,7 +11,7 @@
   window.GAME_REGISTRY?.register({
     id: "spaceinvaders",
     name: "Space Invaders",
-    subtitle: "Waffen, Schild & Unverwundbarkeit • Dickere Bunker • UFO-Boss-Wellen",
+    subtitle: "Waffen, Schild & Unverwundbarkeit • Dickere Bunker • UFO-Boss-Wellen & Flieger",
     tag: "Arcade Klassiker",
     icon: "👾",
     hidden: false,
@@ -32,6 +32,9 @@
       this.isBossWave = false;
       this.boss = null;
       this.bossFireTimer = 1.1;
+      this.bossDefeatedCount = 0;
+      this.raiders = [];
+      this.raiderFireTimer = 0.9;
 
       this.hasShield = false;
       this.invulnTimer = 0;
@@ -196,10 +199,17 @@
 
     updateHud() {
       if (!this.hud) return;
-      const waveLabel = this.isBossWave ? `BOSS W${this.wave}` : `WELLE ${this.wave}`;
+      const hasActiveRaiders = Array.isArray(this.raiders) && this.raiders.some((r) => r.alive);
+      const waveLabel = this.boss
+        ? `BOSS W${this.wave}`
+        : hasActiveRaiders
+          ? `FLIEGER x${this.raiders.filter((r) => r.alive).length}`
+          : this.isBossWave
+            ? `BOSS W${this.wave}`
+            : `WELLE ${this.wave}`;
       this.hud.innerHTML = `
         <span class="text-cyan-300">PUNKTE ${this.score}</span>
-        <span class="${this.isBossWave ? "text-rose-400 font-bold" : "text-yellow-300"}">${waveLabel}</span>
+        <span class="${this.boss || hasActiveRaiders || this.isBossWave ? "text-rose-400 font-bold" : "text-yellow-300"}">${waveLabel}</span>
         <span class="text-green-400">LEBEN ${"🚀".repeat(Math.max(0, this.lives)) || "0"}</span>
         <span class="text-fuchsia-300">BEST ${this.bestScore}</span>
       `;
@@ -238,6 +248,17 @@
       this.buildBunkers(prevW, prevH);
       if (this.boss) {
         this.boss.x = Math.max(this.boss.w / 2 + 10, Math.min(w - this.boss.w / 2 - 10, (this.boss.x / prevW) * w));
+        const minY = Math.max(52, h * 0.12);
+        const maxY = Math.min(this.player.y - 120, Math.max(minY + 36, h * 0.31));
+        this.boss.minY = minY;
+        this.boss.maxY = maxY;
+        this.boss.y = Math.max(minY, Math.min(maxY, (this.boss.y / prevH) * h));
+      }
+      if (Array.isArray(this.raiders)) {
+        for (const r of this.raiders) {
+          r.x = Math.max(r.r + 10, Math.min(w - r.r - 10, (r.x / prevW) * w));
+          r.y = Math.max(16, (r.y / prevH) * h);
+        }
       }
     },
 
@@ -276,6 +297,31 @@
       }
     },
 
+    spawnRaidersAfterBoss() {
+      const w = this.field.w || 360;
+      const count = 2 + this.bossDefeatedCount; // Nach 1. Boss = 3, nach 2. Boss = 4, usw.
+      this.raiders = [];
+      this.raiderFireTimer = 0.85;
+
+      for (let i = 0; i < count; i++) {
+        const frac = (i + 1) / (count + 1);
+        const startX = 24 + frac * Math.max(40, w - 48);
+        const startY = 24 + (i % 2) * 16;
+        const dir = i % 2 === 0 ? 1 : -1;
+        this.raiders.push({
+          x: startX,
+          y: startY,
+          r: 12,
+          vx: (72 + this.bossDefeatedCount * 10) * dir,
+          vy: 28 + Math.min(28, this.bossDefeatedCount * 4),
+          hp: 2,
+          points: 120,
+          alive: true
+        });
+      }
+      this.updateHud();
+    },
+
     setupWave(waveNum, resetLives = false) {
       this.wave = waveNum;
       this.isBossWave = waveNum % 4 === 0;
@@ -284,6 +330,7 @@
         this.lives = this.maxLives;
         this.hasShield = false;
         this.invulnTimer = 0;
+        this.bossDefeatedCount = 0;
         this.currentWeapon = "laser";
         this.unlockedWeapons = new Set(["laser"]);
       } else {
@@ -310,6 +357,7 @@
       this.enemyFireTimer = Math.max(0.5, 1.05 - waveNum * 0.08);
       this.boss = null;
       this.bossFireTimer = 1.0;
+      this.raiders = [];
 
       if (resetLives) {
         this.bunkers = [];
@@ -321,17 +369,23 @@
       }
 
       const w = this.field.w || 360;
+      const h = this.field.h || 500;
       this.enemies = [];
 
       if (this.isBossWave) {
         const bossTier = Math.max(1, Math.floor(waveNum / 4));
         const maxHp = 18 + (bossTier - 1) * 12;
+        const minY = Math.max(52, h * 0.12);
+        const maxY = Math.min(this.player.y - 120, Math.max(minY + 36, h * 0.31));
         this.boss = {
           x: w / 2,
-          y: 74,
+          y: minY + (maxY - minY) * 0.35,
+          minY,
+          maxY,
           w: Math.min(108, w * 0.28),
           h: 42,
           vx: (78 + bossTier * 14) * (Math.random() < 0.5 ? 1 : -1),
+          vy: (34 + bossTier * 8) * (Math.random() < 0.5 ? 1 : -1),
           hp: maxHp,
           maxHp,
           points: 400 * bossTier
@@ -647,6 +701,8 @@
         }
       }
 
+      const aliveRaiders = Array.isArray(this.raiders) ? this.raiders.filter((r) => r.alive) : [];
+
       if (this.isBossWave && this.boss) {
         this.boss.x += this.boss.vx * dt;
         const halfW = this.boss.w / 2;
@@ -656,6 +712,17 @@
         } else if (this.boss.x + halfW > w - 10) {
           this.boss.x = w - 10 - halfW;
           this.boss.vx = -Math.abs(this.boss.vx);
+        }
+
+        const minY = this.boss.minY ?? Math.max(52, h * 0.12);
+        const maxY = this.boss.maxY ?? Math.min(p.y - 120, Math.max(minY + 36, h * 0.31));
+        this.boss.y += (this.boss.vy || 0) * dt;
+        if (this.boss.y < minY) {
+          this.boss.y = minY;
+          this.boss.vy = Math.abs(this.boss.vy || 36);
+        } else if (this.boss.y > maxY) {
+          this.boss.y = maxY;
+          this.boss.vy = -Math.abs(this.boss.vy || 36);
         }
 
         this.bossFireTimer -= dt;
@@ -669,7 +736,46 @@
             { x: this.boss.x + 16, y: by, vx: 42, vy: bSpd * 0.96, r: 3.5 }
           );
         }
-      } else {
+      } else if (aliveRaiders.length > 0) {
+        for (const r of aliveRaiders) {
+          r.x += r.vx * dt;
+          if (r.x - r.r < 10) {
+            r.x = 10 + r.r;
+            r.vx = Math.abs(r.vx);
+          } else if (r.x + r.r > w - 10) {
+            r.x = w - 10 - r.r;
+            r.vx = -Math.abs(r.vx);
+          }
+
+          r.y += r.vy * dt;
+
+          if (r.y + r.r >= p.y + 2) {
+            r.alive = false;
+            this.damagePlayer();
+            return;
+          }
+        }
+
+        this.raiderFireTimer -= dt;
+        if (this.raiderFireTimer <= 0) {
+          this.raiderFireTimer = Math.max(0.45, 0.95 - this.bossDefeatedCount * 0.07);
+          const stillAlive = this.raiders.filter((r) => r.alive);
+          const shooter = stillAlive[Math.floor(Math.random() * stillAlive.length)];
+          if (shooter) {
+            this.enemyBullets.push({
+              x: shooter.x,
+              y: shooter.y + shooter.r + 3,
+              vx: 0,
+              vy: 185 + this.wave * 12,
+              r: 3.5
+            });
+          }
+        }
+      } else if (this.isBossWave && !this.boss && this.raiders.length > 0) {
+        this.playSfx("playScore");
+        this.setupWave(this.wave + 1, false);
+        return;
+      } else if (!this.isBossWave) {
         const aliveEnemies = this.enemies.filter((e) => e.alive);
         if (aliveEnemies.length === 0) {
           this.playSfx("playScore");
@@ -722,6 +828,7 @@
       }
 
       const activeEnemies = this.enemies.filter((e) => e.alive);
+      const currentRaiders = Array.isArray(this.raiders) ? this.raiders.filter((r) => r.alive) : [];
 
       for (let i = this.playerBullets.length - 1; i >= 0; i--) {
         const b = this.playerBullets[i];
@@ -749,13 +856,35 @@
             this.spawnParticles(this.boss.x, this.boss.y, "#38bdf8", 28);
             this.maybeSpawnPowerup(this.boss.x, this.boss.y);
             this.boss = null;
+            this.bossDefeatedCount += 1;
             this.playSfx("playScore");
-            this.updateHud();
-            this.setupWave(this.wave + 1, false);
+            this.spawnRaidersAfterBoss();
             return;
           }
           continue;
         }
+
+        let hitRaider = false;
+        for (const r of currentRaiders) {
+          const dist = Math.hypot(b.x - r.x, b.y - r.y);
+          if (dist < r.r + b.r) {
+            r.hp -= b.dmg || 1;
+            this.spawnParticles(b.x, b.y, b.color, 7);
+            if (r.hp <= 0) {
+              r.alive = false;
+              this.score += r.points;
+              this.saveBestScore();
+              this.spawnParticles(r.x, r.y, "#fb923c", 14);
+              this.maybeSpawnPowerup(r.x, r.y);
+            }
+            this.playSfx("playHit");
+            this.playerBullets.splice(i, 1);
+            this.updateHud();
+            hitRaider = true;
+            break;
+          }
+        }
+        if (hitRaider) continue;
 
         if (
           this.ufo &&
@@ -807,6 +936,27 @@
             this.playerBullets.splice(i, 1);
             break;
           }
+        }
+      }
+
+      for (const r of currentRaiders) {
+        for (let j = this.bunkers.length - 1; j >= 0; j--) {
+          const bnk = this.bunkers[j];
+          if (r.x + r.r > bnk.x && r.x - r.r < bnk.x + bnk.w && r.y + r.r > bnk.y && r.y - r.r < bnk.y + bnk.h) {
+            bnk.hp -= 2;
+            r.alive = false;
+            this.spawnParticles(r.x, r.y, "#fb923c", 12);
+            if (bnk.hp <= 0) this.bunkers.splice(j, 1);
+            this.updateHud();
+            break;
+          }
+        }
+        if (!r.alive) continue;
+
+        if (r.x + r.r > p.x + 2 && r.x - r.r < p.x + p.w - 2 && r.y + r.r > p.y + 2 && r.y - r.r < p.y + p.h) {
+          r.alive = false;
+          this.damagePlayer();
+          return;
         }
       }
 
@@ -891,6 +1041,38 @@
       ctx.stroke();
 
       ctx.restore();
+    },
+
+    drawRaiders(ctx) {
+      if (!Array.isArray(this.raiders)) return;
+      for (const r of this.raiders) {
+        if (!r.alive) continue;
+        ctx.save();
+        ctx.translate(r.x, r.y);
+
+        // Schneller Angriffsflieger mit nach unten gerichteter Nase
+        ctx.fillStyle = "#fb923c";
+        ctx.strokeStyle = "#fed7aa";
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.moveTo(0, r.r);
+        ctx.lineTo(r.r * 0.95, -r.r * 0.55);
+        ctx.lineTo(r.r * 0.25, -r.r * 0.2);
+        ctx.lineTo(0, -r.r * 0.85);
+        ctx.lineTo(-r.r * 0.25, -r.r * 0.2);
+        ctx.lineTo(-r.r * 0.95, -r.r * 0.55);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Cockpit / Kern
+        ctx.fillStyle = "#fef08a";
+        ctx.beginPath();
+        ctx.arc(0, 0, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
     },
 
     drawBoss(ctx) {
@@ -1178,6 +1360,7 @@
       }
 
       this.drawBoss(ctx);
+      this.drawRaiders(ctx);
       this.drawUfo(ctx);
 
       for (const pu of this.powerups) {
