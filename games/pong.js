@@ -316,7 +316,6 @@
 
         for (const pt of this.touches.values()) {
           if (this.arena.isSquare) {
-            // Klare Zonen ohne Überlappung in der Mitte bei 3P/4P
             const relX = pt.x - midX;
             const relY = pt.y - midY;
             const inBottom = relY >= Math.abs(relX) && pt.y >= midY;
@@ -561,4 +560,123 @@
       ctx.clearRect(0, 0, w, h);
 
       ctx.save();
-      ctx.strokeStyle = "rgba(34,
+      ctx.strokeStyle = "rgba(34, 211, 238, 0.35)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(this.arena.x, this.arena.y, this.arena.width, this.arena.height);
+
+      for (const p of this.players) {
+        if (!p.eliminated) continue;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        if (p.edge === "bottom") {
+          ctx.moveTo(this.arena.x, this.arena.y + this.arena.height);
+          ctx.lineTo(this.arena.x + this.arena.width, this.arena.y + this.arena.height);
+        } else if (p.edge === "top") {
+          ctx.moveTo(this.arena.x, this.arena.y);
+          ctx.lineTo(this.arena.x + this.arena.width, this.arena.y);
+        } else if (p.edge === "left") {
+          ctx.moveTo(this.arena.x, this.arena.y);
+          ctx.lineTo(this.arena.x, this.arena.y + this.arena.height);
+        } else if (p.edge === "right") {
+          ctx.moveTo(this.arena.x + this.arena.width, this.arena.y);
+          ctx.lineTo(this.arena.x + this.arena.width, this.arena.y + this.arena.height);
+        }
+        ctx.stroke();
+      }
+
+      ctx.font = "700 11px Orbitron, sans-serif";
+      ctx.textAlign = "center";
+      for (const p of this.players) {
+        ctx.fillStyle = p.eliminated ? "rgba(148, 163, 184, 0.4)" : p.color;
+        const label = this.arena.isSquare
+          ? `${p.name}: ${p.eliminated ? "OUT" : "♥".repeat(p.lives)}`
+          : `${p.name}: ${p.score}`;
+        if (p.edge === "bottom") ctx.fillText(label, w / 2, this.arena.y + this.arena.height - 34);
+        if (p.edge === "top") ctx.fillText(label, w / 2, this.arena.y + 38);
+      }
+
+      for (const p of this.players) {
+        if (p.eliminated) continue;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.roundRect(p.x, p.y, p.w, p.h, 6);
+        ctx.fill();
+      }
+
+      ctx.shadowBlur = 0;
+      for (let i = 0; i < this.ball.trail.length; i++) {
+        const t = this.ball.trail[i];
+        const alpha = ((i + 1) / this.ball.trail.length) * 0.28;
+        ctx.fillStyle = t.color;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, this.ball.radius * 0.75, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = this.ball.color;
+      ctx.shadowColor = this.ball.color;
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+      for (const pt of this.particles) {
+        ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
+        ctx.fillStyle = pt.color;
+        ctx.fillRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size);
+      }
+      ctx.globalAlpha = 1;
+
+      ctx.restore();
+    },
+
+    loop(now) {
+      const dt = Math.min(0.05, Math.max(0.001, (now - this.lastTime) / 1000 || 0.016));
+      this.lastTime = now;
+      this.update(dt);
+      this.draw();
+      this.rafId = requestAnimationFrame((t) => this.loop(t));
+    },
+
+    start() {
+      this.lastTime = performance.now();
+      this.paused = false;
+      if (!this.rafId) {
+        this.rafId = requestAnimationFrame((t) => this.loop(t));
+      }
+    },
+
+    pause() {
+      this.paused = true;
+    },
+
+    resume() {
+      this.paused = false;
+      this.lastTime = performance.now();
+    },
+
+    destroy() {
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+      this.canvas?.removeEventListener("pointerdown", this.onPointerDown);
+      this.canvas?.removeEventListener("pointermove", this.onPointerMove);
+      this.canvas?.removeEventListener("pointerup", this.onPointerUp);
+      this.canvas?.removeEventListener("pointercancel", this.onPointerUp);
+      this.touches.clear();
+      if (this.root && this.root.parentNode) {
+        this.root.parentNode.removeChild(this.root);
+      }
+      this.root = null;
+      this.canvas = null;
+      this.ctx = null;
+    }
+  });
+})();
