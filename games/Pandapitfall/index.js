@@ -10,7 +10,7 @@
   ];
 
   function loadScript(src) {
-    const v = window.APP_VERSION || "2.2.0";
+    const v = window.APP_VERSION || "2.3.0";
     const versionedSrc = `${src}?v=${v}`;
     return new Promise((resolve, reject) => {
       if (document.querySelector(`script[src*="${src}"]`)) {

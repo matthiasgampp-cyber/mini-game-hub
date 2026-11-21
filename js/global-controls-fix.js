@@ -56,6 +56,8 @@
     found.forEach((el) => el.remove());
   }
 
+  const JOYSTICK_GAMES = new Set(["pandiesabenteuer", "yetiadventure", "pandapitfall"]);
+
   function releaseAllHeld() {
     Object.keys(state.held).forEach((k) => {
       state.held[k] = false;
@@ -71,20 +73,21 @@
   function syncGlobalPadState() {
     removeDuplicateOverlays();
     const miniPad = document.getElementById("global-mini-controls");
-    const mode = baseControls?.mode || window.GLOBAL_MOBILE_CONTROLS?.mode || "buttons";
-    const dpadMode = baseControls?.dpadMode || window.GLOBAL_MOBILE_CONTROLS?.dpadMode || "joystick";
+    const active = getActiveGameEntry();
+    const activeId = active?.id || window.GAME_REGISTRY?.activeId || null;
+    const isJoystickGame = activeId ? JOYSTICK_GAMES.has(activeId) : false;
     const pauseOverlay = document.getElementById("pause-overlay");
     const modalOpen = pauseOverlay && !pauseOverlay.classList.contains("hidden");
 
     if (miniPad) {
-      if (modalOpen || mode !== "buttons") {
+      if (modalOpen || !isJoystickGame) {
         miniPad.classList.add("hidden");
         releaseAllHeld();
       } else {
         miniPad.classList.remove("hidden");
+        const dpadMode = baseControls?.dpadMode || window.GLOBAL_MOBILE_CONTROLS?.dpadMode || "joystick";
         const joystickCont = miniPad.querySelector("#gpad-joystick-container");
         const arrowsCont = miniPad.querySelector("#gpad-arrows-container");
-        const padToggleBtn = miniPad.querySelector("#gpad-toggle-type-btn");
 
         if (joystickCont) {
           joystickCont.classList.toggle("hidden", dpadMode !== "joystick");
@@ -94,9 +97,6 @@
         }
         if (arrowsCont) {
           arrowsCont.classList.toggle("hidden", dpadMode !== "arrows");
-        }
-        if (padToggleBtn) {
-          padToggleBtn.textContent = dpadMode === "joystick" ? "🕹️ Stick" : "◀▶ Pfeile";
         }
       }
     }

@@ -105,6 +105,8 @@
     }
   };
 
+  const JOYSTICK_GAMES = new Set(["pandiesabenteuer", "yetiadventure", "pandapitfall"]);
+
   let controlMode = storage.get("control_mode", "buttons"); // "buttons" | "touch"
   let dpadMode = storage.get("dpad_mode", "joystick"); // "joystick" | "arrows"
   const heldControls = { left: false, right: false, up: false, down: false, jump: false };
@@ -125,7 +127,8 @@
     stage: document.getElementById("game-stage"),
     gameGrid: document.getElementById("game-grid"),
     homeBtn: document.getElementById("hub-home-btn"),
-    dpadToggleBtn: document.getElementById("dpad-toggle-btn"),
+    hubCtrlJoystickBtn: document.getElementById("hub-ctrl-joystick-btn"),
+    hubCtrlArrowsBtn: document.getElementById("hub-ctrl-arrows-btn"),
     controlModeBtn: document.getElementById("control-mode-btn"),
     pauseBtn: document.getElementById("pause-toggle-btn"),
     soundBtn: document.getElementById("sound-toggle-btn"),
@@ -223,41 +226,44 @@
     }
   }
 
-  function syncControlUI() {
-    if (dom.controlModeBtn) {
-      dom.controlModeBtn.classList.toggle("hidden", !activeGameId);
-      dom.controlModeBtn.textContent =
-        controlMode === "buttons" ? "🎮 Buttons" : "👆 Nur Touch";
-    }
+  function updateHubControlSelector() {
+    if (dom.hubCtrlJoystickBtn && dom.hubCtrlArrowsBtn) {
+      const isStick = dpadMode === "joystick";
+      dom.hubCtrlJoystickBtn.className = isStick
+        ? "px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase transition bg-cyan-500/25 text-cyan-300 border border-cyan-400/50 shadow-[0_0_12px_rgba(34,211,238,0.3)]"
+        : "px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase transition text-slate-400 hover:text-slate-200 border border-transparent";
 
-    if (dom.dpadToggleBtn) {
-      const showDpadToggle = Boolean(activeGameId) && controlMode === "buttons";
-      dom.dpadToggleBtn.classList.toggle("hidden", !showDpadToggle);
-      dom.dpadToggleBtn.textContent = dpadMode === "joystick" ? "🕹️ Stick" : "◀▶ Pfeile";
+      dom.hubCtrlArrowsBtn.className = !isStick
+        ? "px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase transition bg-cyan-500/25 text-cyan-300 border border-cyan-400/50 shadow-[0_0_12px_rgba(34,211,238,0.3)]"
+        : "px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase transition text-slate-400 hover:text-slate-200 border border-transparent";
     }
+  }
+
+  function syncControlUI() {
+    updateHubControlSelector();
+
+    if (dom.controlModeBtn) dom.controlModeBtn.classList.add("hidden");
+    if (dom.dpadToggleBtn) dom.dpadToggleBtn.classList.add("hidden");
 
     if (globalPadEl) {
-      const showPad = Boolean(activeGameId) && !isPaused && controlMode === "buttons";
+      const isJoystickGame = JOYSTICK_GAMES.has(activeGameId);
+      const showPad = isJoystickGame && Boolean(activeGameId) && !isPaused;
       globalPadEl.classList.toggle("hidden", !showPad);
 
-      const joystickCont = globalPadEl.querySelector("#gpad-joystick-container");
-      const arrowsCont = globalPadEl.querySelector("#gpad-arrows-container");
-      const padToggleBtn = globalPadEl.querySelector("#gpad-toggle-type-btn");
+      if (showPad) {
+        const joystickCont = globalPadEl.querySelector("#gpad-joystick-container");
+        const arrowsCont = globalPadEl.querySelector("#gpad-arrows-container");
 
-      if (joystickCont) {
-        joystickCont.classList.toggle("hidden", dpadMode !== "joystick");
-        if (dpadMode === "joystick" && virtualJoystickInstance) {
-          virtualJoystickInstance.updateGeometry();
+        if (joystickCont) {
+          joystickCont.classList.toggle("hidden", dpadMode !== "joystick");
+          if (dpadMode === "joystick" && virtualJoystickInstance) {
+            virtualJoystickInstance.updateGeometry();
+          }
         }
-      }
-      if (arrowsCont) {
-        arrowsCont.classList.toggle("hidden", dpadMode !== "arrows");
-      }
-      if (padToggleBtn) {
-        padToggleBtn.textContent = dpadMode === "joystick" ? "🕹️ Stick" : "◀▶ Pfeile";
-      }
-
-      if (!showPad) {
+        if (arrowsCont) {
+          arrowsCont.classList.toggle("hidden", dpadMode !== "arrows");
+        }
+      } else {
         releaseAllHeldControls();
       }
     }
@@ -300,9 +306,9 @@
     const pad = document.createElement("div");
     pad.id = "global-mini-controls";
     pad.className =
-      "hidden pointer-events-none absolute inset-x-0 bottom-0 z-25 flex items-end justify-between px-3 py-2 touch-none select-none";
+      "hidden pointer-events-none absolute inset-x-0 z-25 flex items-center justify-between px-3 py-2 touch-none select-none";
     pad.innerHTML = `
-      <div class="pointer-events-auto flex items-end gap-2 sm:gap-2.5">
+      <div class="pointer-events-auto flex items-center">
         <div id="gpad-joystick-container" class="touch-none select-none"></div>
 
         <div id="gpad-arrows-container" class="hidden flex items-center gap-1.5 sm:gap-2">
@@ -311,19 +317,10 @@
           <button type="button" data-gpad="up" aria-label="Hoch" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-emerald-400/40 bg-slate-900/85 text-emerald-200 font-bold text-base shadow-lg shadow-emerald-950/40 active:scale-95 active:bg-emerald-500/30 touch-none select-none">▲</button>
           <button type="button" data-gpad="down" aria-label="Runter" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-amber-400/40 bg-slate-900/85 text-amber-200 font-bold text-base shadow-lg shadow-amber-950/40 active:scale-95 active:bg-amber-500/30 touch-none select-none">▼</button>
         </div>
-
-        <button
-          type="button"
-          id="gpad-toggle-type-btn"
-          aria-label="Steuerung wechseln"
-          class="mb-1 px-2.5 py-1 sm:py-1.5 rounded-lg border border-cyan-400/35 bg-slate-900/80 text-[10px] sm:text-xs font-bold text-cyan-300 hover:bg-cyan-500/20 active:scale-95 transition shadow-sm backdrop-blur-sm touch-none select-none"
-        >
-          🕹️ Stick
-        </button>
       </div>
 
-      <div class="pointer-events-auto flex items-end">
-        <button type="button" data-gpad="jump" aria-label="Springen" class="px-4 h-11 sm:h-12 rounded-xl border border-cyan-300/60 bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-orbitron text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-cyan-500/30 active:scale-95 touch-none select-none">Springen</button>
+      <div class="pointer-events-auto flex items-center">
+        <button type="button" data-gpad="jump" aria-label="Springen" class="px-5 h-12 sm:h-13 rounded-2xl border border-cyan-300/60 bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-orbitron text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-cyan-500/35 active:scale-95 touch-none select-none">Springen</button>
       </div>
     `;
 
@@ -333,7 +330,7 @@
       virtualJoystickInstance = new window.VirtualJoystick({
         container: joystickContainer,
         onMove: ({ directions }) => {
-          if (!activeGameId || isPaused || controlMode !== "buttons") return;
+          if (!activeGameId || isPaused) return;
           sound.ensureContext();
           setDirections(directions);
         },
@@ -343,15 +340,6 @@
       });
       window.VIRTUAL_JOYSTICK = virtualJoystickInstance;
     }
-
-    // Toggle-Button im Pad
-    const padToggleBtn = pad.querySelector("#gpad-toggle-type-btn");
-    padToggleBtn?.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      sound.ensureContext();
-      toggleDpadMode();
-    });
 
     // Touch-Buttons für D-Pad und Jump
     pad.querySelectorAll("[data-gpad]").forEach((btn) => {
@@ -365,7 +353,7 @@
             btn.setPointerCapture(ev.pointerId);
           } catch (_) {}
         }
-        if (!activeGameId || isPaused || controlMode !== "buttons") return;
+        if (!activeGameId || isPaused) return;
         sound.ensureContext();
 
         setDirection(action, true);
@@ -526,6 +514,7 @@
     destroyActiveGame();
 
     activeGameId = gameId;
+    if (window.GAME_REGISTRY) window.GAME_REGISTRY.activeId = gameId;
     isPaused = false;
 
     dom.hubView.classList.add("hidden");
@@ -538,13 +527,17 @@
     dom.headerTitle.textContent = game.name.toUpperCase();
     dom.headerSubtitle.textContent = game.subtitle || game.tag || "Minispiel";
 
-    ensureGlobalPad();
+    if (JOYSTICK_GAMES.has(gameId)) {
+      ensureGlobalPad();
+    }
     const ctx = createHubContext(gameId);
 
     if (typeof game.init === "function") {
       game.init(ctx);
     }
-    ensureGlobalPad();
+    if (JOYSTICK_GAMES.has(gameId)) {
+      ensureGlobalPad();
+    }
     syncControlUI();
 
     if (typeof game.resize === "function") {
@@ -663,13 +656,13 @@
     }
   });
 
-  dom.dpadToggleBtn?.addEventListener("click", () => {
+  dom.hubCtrlJoystickBtn?.addEventListener("click", () => {
     sound.ensureContext();
-    toggleDpadMode();
+    setDpadMode("joystick");
   });
-  dom.controlModeBtn?.addEventListener("click", () => {
+  dom.hubCtrlArrowsBtn?.addEventListener("click", () => {
     sound.ensureContext();
-    setControlMode(controlMode === "buttons" ? "touch" : "buttons");
+    setDpadMode("arrows");
   });
   dom.homeBtn?.addEventListener("click", exitToHub);
   dom.exitToHubBtn?.addEventListener("click", exitToHub);
@@ -693,7 +686,7 @@
   // =========================================================
   // Automatischer Update- & Cache-Buster-Mechanismus für Handys
   // =========================================================
-  const APP_VERSION = window.APP_VERSION || "2.2.0";
+  const APP_VERSION = window.APP_VERSION || "2.3.0";
 
   // Bereinige etwaige alte / verwaiste Service Worker & Cache-Storage auf Mobilgeräten
   if ("serviceWorker" in navigator) {

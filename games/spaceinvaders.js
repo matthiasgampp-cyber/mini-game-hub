@@ -83,25 +83,25 @@
       this.canvasCtx = this.canvas.getContext("2d");
 
       this.controlsBar = document.createElement("div");
-      this.controlsBar.className = "w-full max-w-[480px] flex items-center justify-between gap-2 mt-1.5";
+      this.controlsBar.className = "w-full max-w-[480px] flex items-center justify-between gap-2 mt-2 px-1";
       this.controlsBar.innerHTML = `
-        <div id="si-weapon-badge" class="text-[11px] text-cyan-300 font-bold px-1 truncate">
+        <div id="si-weapon-badge" class="text-xs sm:text-sm text-cyan-300 font-bold px-1 truncate">
           WAFFE: LASER
         </div>
-        <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-2">
           <button
             id="si-switch-weapon-btn"
             type="button"
-            class="px-3 py-2 rounded-xl font-orbitron text-[10px] font-bold uppercase tracking-wider border border-fuchsia-400/50 bg-fuchsia-500/15 text-fuchsia-200 hover:bg-fuchsia-500/25 transition"
+            class="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-orbitron text-xs font-bold uppercase tracking-wider border border-fuchsia-400/60 bg-fuchsia-500/20 text-fuchsia-200 hover:bg-fuchsia-500/35 active:scale-95 transition shadow-sm touch-none select-none"
           >
-            Waffe
+            ⚡ Waffe
           </button>
           <button
             id="si-fire-btn"
             type="button"
-            class="px-4 py-2 rounded-xl font-orbitron text-[11px] font-black uppercase tracking-wider bg-cyan-400 text-slate-950 hover:bg-cyan-300 transition select-none"
+            class="px-6 py-2 sm:px-7 sm:py-2.5 rounded-xl font-orbitron text-xs sm:text-sm font-black uppercase tracking-wider bg-gradient-to-r from-cyan-400 to-cyan-300 text-slate-950 hover:bg-cyan-200 active:scale-95 transition shadow-lg shadow-cyan-500/35 touch-none select-none"
           >
-            Feuer
+            🔥 FEUER
           </button>
         </div>
       `;
@@ -126,10 +126,18 @@
 
       this.onFireDown = (e) => {
         e.preventDefault();
+        try {
+          this.fireBtn?.setPointerCapture?.(e.pointerId);
+        } catch (_) {}
         if (this.phase !== "playing" || this.paused) return;
         this.keys.fire = true;
       };
-      this.onFireUp = () => {
+      this.onFireUp = (e) => {
+        try {
+          if (e && e.pointerId !== undefined) {
+            this.fireBtn?.releasePointerCapture?.(e.pointerId);
+          }
+        } catch (_) {}
         this.keys.fire = false;
       };
 
@@ -182,7 +190,6 @@
     updateWeaponUi() {
       const spec = WEAPON_SPECS[this.currentWeapon] || WEAPON_SPECS.laser;
       const statusParts = [];
-      if (this.isTouchDevice) statusParts.push("AUTO-FEUER");
       if (this.hasShield) statusParts.push("SCHILD");
       if (this.invulnTimer > 0) statusParts.push(`UNVERWUNDBAR ${this.invulnTimer.toFixed(1)}s`);
       const extra = statusParts.length ? ` • ${statusParts.join(" • ")}` : "";
@@ -190,10 +197,6 @@
       if (this.weaponBadge) {
         this.weaponBadge.textContent = `WAFFE: ${spec.label} (${this.unlockedWeapons.size}/4)${extra}`;
         this.weaponBadge.style.color = this.invulnTimer > 0 ? "#fde047" : spec.color;
-      }
-
-      if (this.fireBtn) {
-        this.fireBtn.classList.toggle("hidden", this.isTouchDevice);
       }
     },
 
@@ -675,7 +678,7 @@
 
       p.fireCooldown = Math.max(0, p.fireCooldown - dt);
       const spec = WEAPON_SPECS[this.currentWeapon] || WEAPON_SPECS.laser;
-      const shouldFire = this.isTouchDevice || this.keys.fire || Boolean(gHeld.jump || gHeld.up);
+      const shouldFire = this.keys.fire || Boolean(gHeld.jump || gHeld.up);
       if (shouldFire && p.fireCooldown <= 0) {
         this.firePlayerWeapon();
         p.fireCooldown = spec.cooldown;

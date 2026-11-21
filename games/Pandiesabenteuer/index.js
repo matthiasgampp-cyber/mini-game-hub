@@ -68,7 +68,7 @@
     }
 
     const src = urls[index];
-    const v = window.APP_VERSION || "2.2.0";
+    const v = window.APP_VERSION || "2.3.0";
     const versionedSrc = `${src}?v=${v}`;
     const existing = Array.from(document.scripts).find((s) => {
       const sSrc = s.getAttribute("src") || "";
