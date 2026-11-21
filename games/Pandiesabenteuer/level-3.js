@@ -621,19 +621,22 @@
       cops: [],
       drawBackground: drawChineseHouseBackground,
       update(game, dt) {
+        const diff = game.getDifficultyMultiplier ? game.getDifficultyMultiplier() : 1;
         for (const cannon of state.cannons) {
           if (cannon.recoilTimer > 0) {
             cannon.recoilTimer = Math.max(0, cannon.recoilTimer - dt);
           }
           cannon.cooldown -= dt;
           if (cannon.cooldown <= 0) {
-            cannon.cooldown =
+            const baseCooldown =
               cannon.fixedInterval ??
               randomInterval(cannon.minInterval, cannon.maxInterval);
+            cannon.cooldown = baseCooldown / Math.sqrt(diff);
             cannon.recoilTimer = 0.18;
-            const speed =
+            const baseSpeed =
               cannon.fixedSpeed ??
               cannon.minSpeed + Math.random() * (cannon.maxSpeed - cannon.minSpeed);
+            const speed = baseSpeed * diff;
             const life = cannon.maxFlightTime ?? 5.0;
 
             state.heartProjectiles.push({

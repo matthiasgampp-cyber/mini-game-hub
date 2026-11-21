@@ -20,6 +20,8 @@
 
       this.levels = [];
       this.levelIndex = 0;
+      this.loopRound = 1;
+      this._isAdvancingLevel = false;
       this.levelMode = "platform";
       this.currentLevelDef = null;
       this.currentLevelBuilt = null;
@@ -61,6 +63,7 @@
         vy: 0,
         onGround: false,
         onBamboo: false,
+        isSwinging: false,
         facing: 1,
         walkCycle: 0,
         squashY: 1
@@ -168,6 +171,8 @@
 
     resetGame() {
       this.levelIndex = 0;
+      this.loopRound = 1;
+      this._isAdvancingLevel = false;
       this.score = 0;
       this.rescuedCount = 0;
       this.lives = 3;
@@ -211,8 +216,12 @@
       this.keysRequired = built.keysRequired ?? lvl.keysRequired ?? 1;
       this.coinsCollected = 0;
       this.coinsTotal = this.coins.length;
+      this._isAdvancingLevel = false;
 
-      this.ctx?.setSubtitle?.(lvl.name);
+      const roundTitle = (this.loopRound && this.loopRound > 1)
+        ? `${lvl.name} (Runde ${this.loopRound} ⚔️)`
+        : lvl.name;
+      this.ctx?.setSubtitle?.(roundTitle);
 
       if (resetPandi) {
         const spawn = built.spawn || {
@@ -227,6 +236,7 @@
         this.pandi.vy = 0;
         this.pandi.onGround = true;
         this.pandi.onBamboo = false;
+        this.pandi.isSwinging = false;
         this.pandi.facing = 1;
         this.pandi.squashY = 1;
       }
@@ -455,7 +465,8 @@
       const scrEl = this.hud.querySelector('[data-hud="score"]');
       const livEl = this.hud.querySelector('[data-hud="lives"]');
 
-      if (lvlEl) lvlEl.textContent = `LVL ${this.levelIndex + 1}`;
+      const roundSuffix = (this.loopRound && this.loopRound > 1) ? ` • R${this.loopRound}` : "";
+      if (lvlEl) lvlEl.textContent = `LVL ${this.levelIndex + 1}${roundSuffix}`;
       if (goalEl) {
         const customHud = this.currentLevelBuilt?.hudText || this.currentLevelDef?.hudText;
         if (typeof customHud === "function") {
@@ -473,6 +484,56 @@
       if (resEl) resEl.textContent = `🐼 ${this.rescuedCount}`;
       if (scrEl) scrEl.textContent = `${this.score} PKT`;
       if (livEl) livEl.textContent = "❤️".repeat(Math.max(0, this.lives)) || "💀";
+    }
+
+    getDifficultyMultiplier() {
+      const round = this.loopRound || 1;
+      // Ab Runde 2 wird das Spiel spürbar, aber fair anspruchsvoller (+12% Tempo pro Runde, gedeckelt auf +60%)
+      return 1 + Math.min(0.60, (round - 1) * 0.12);
+    }
+
+    advanceLevel() {
+      if (this._isAdvancingLevel) return;
+      this._isAdvancingLevel = true;
+      this._updateHud();
+
+      const isLastLevel = this.levelIndex >= this.levels.length - 1;
+      if (isLastLevel) {
+        // Letztes Level geschafft: Neue Runde starten (New Game+) mit erhöhtem Schwierigkeitsgrad!
+        this.loopRound = (this.loopRound || 1) + 1;
+        this.score += 2000;
+        this.lives = Math.min(3, this.lives + 1); // 1 Herz Bonus-Heilung
+        this.ctx?.sound?.playWin?.();
+
+        this.addFloatingText(
+          (this.view?.w || 800) * 0.5,
+          (this.view?.h || 600) * 0.35,
+          `🏆 RUNDE ${this.loopRound - 1} VOLLENDET! +2000 PKT 🏆`,
+          "#facc15"
+        );
+        this.addFloatingText(
+          (this.view?.w || 800) * 0.5,
+          (this.view?.h || 600) * 0.42,
+          `⚔️ RUNDE ${this.loopRound} STARTET (SCHNELLERE GEGNER)!`,
+          "#38bdf8"
+        );
+
+        setTimeout(() => {
+          this._isAdvancingLevel = false;
+          this.setupLevel(0, true);
+          this.addFloatingText(
+            (this.view?.w || 800) * 0.5,
+            (this.view?.h || 600) * 0.35,
+            `⚔️ RUNDE ${this.loopRound} AKTIV!`,
+            "#f87171"
+          );
+        }, 1300);
+      } else {
+        setTimeout(() => {
+          this._isAdvancingLevel = false;
+          this.setupLevel(this.levelIndex + 1, true);
+        }, 900);
+      }
     }
 
     damagePandi(reason) {
@@ -559,8 +620,78 @@
         }
       }
 
+      // Schlüssel / Geschenke einsammeln (auch im Labyrinth, z.B. Level 4)
+      for (const k of this.keys) {
+        if (k.collected) continue;
+        const distKey = Math.hypot(p.x + p.w * 0.5 - k.x, p.y + p.h * 0.5 - k.y);
+        if (distKey < 28) {
+          k.collected = true;
+          this.keysCollected += 1;
+          this.score += 200;
+          this.ctx?.sound?.playScore?.();
+          this.spawnParticles(k.x, k.y, "#facc15", 16);
+          this.spawnParticles(k.x, k.y, "#f43f5e", 12);
+
+          if (k.isGift) {
+            const isComplete = this.keysCollected >= this.keysRequired;
+            const text = isComplete
+              ? `${this.keysCollected}. TEIL! SCHLÜSSEL KOMPLETT! ➔ ZUM KÄFIG!`
+              : `${this.keysCollected}. SCHLÜSSELTEIL GEFUNDEN! (${this.keysCollected}/${this.keysRequired})`;
+            this.addFloatingText(k.x - this.camera.x, k.y - this.camera.y - 14, text, "#fef08a");
+          } else {
+            this.addFloatingText(k.x - this.camera.x, k.y - this.camera.y - 12, "SCHLÜSSEL! JETZT ZUM KÄFIG!", "#fef08a");
+          }
+          this._updateHud();
+        }
+      }
+
+      // Käfig & Panda befreien (auch im Labyrinth, z.B. Level 4)
+      if (this.cage && !this.cage.freed) {
+        const overlapsCage =
+          p.x + p.w > this.cage.x - this.cage.w * 0.5 &&
+          p.x < this.cage.x + this.cage.w * 0.5 &&
+          p.y + p.h > this.cage.y &&
+          p.y < this.cage.y + this.cage.h;
+
+        if (overlapsCage) {
+          if (this.keysCollected >= this.keysRequired) {
+            this.cage.freed = true;
+            this.rescuedCount += 1;
+            this.score += 700;
+            this.ctx?.sound?.playScore?.();
+            this.spawnParticles(this.cage.x, this.cage.y + 16, "#4ade80", 32);
+            this.spawnParticles(this.cage.x, this.cage.y + 16, "#facc15", 26);
+
+            this.addFloatingText(
+              this.cage.x - this.camera.x,
+              this.cage.y - this.camera.y - 14,
+              "PANDA BEFREIT! +700",
+              "#fef08a"
+            );
+            this.advanceLevel();
+          } else if (this.invulnTimer <= 0) {
+            this.invulnTimer = 0.8;
+            const needed = this.keysRequired - this.keysCollected;
+            const text = this.keysRequired > 1
+              ? `NOCH ${needed} SCHLÜSSELTEIL${needed > 1 ? "E" : ""} NÖTIG!`
+              : "SCHLÜSSEL ZUERST HOLEN!";
+            this.addFloatingText(
+              this.cage.x - this.camera.x,
+              this.cage.y - this.camera.y - 14,
+              text,
+              "#fef08a"
+            );
+          }
+        }
+      }
+
+      // Polizisten-KI im Labyrinth (z.B. Level 4)
+      if (this.cops.length > 0) {
+        this._updateMazeCops(dt, p);
+      }
+
       // Ausgang erreichen
-      if (this.exit) {
+      if (this.exit && !this._isAdvancingLevel) {
         const exLeft = this.exit.x - this.exit.w * 0.5;
         const exTop = this.exit.y - this.exit.h * 0.5;
         if (this._rectsOverlap(p.x, p.y, p.w, p.h, exLeft, exTop, this.exit.w, this.exit.h)) {
@@ -574,15 +705,130 @@
             "LABYRINTH GEMEISTERT! +500",
             "#fef08a"
           );
-          this._updateHud();
-          this.setupLevel(this.levelIndex + 1, true);
+          this.advanceLevel();
         }
       }
 
       this._updateCamera(dt);
     }
 
+    _updateMazeCops(dt, p) {
+      const ALERT_DIST = 195;
+      const ESCAPE_DIST = 265;
+      const pandiCx = p.x + p.w * 0.5;
+      const pandiCy = p.y + p.h * 0.5;
+      const diff = this.getDifficultyMultiplier();
+
+      for (const cop of this.cops) {
+        if (!cop.dir) cop.dir = { x: 1, y: 0 };
+        if (cop.dirTimer === undefined) cop.dirTimer = 0.5 + Math.random() * 0.8;
+
+        const copCx = cop.x + cop.w * 0.5;
+        const copCy = cop.y + cop.h * 0.5;
+        const distToPandi = Math.hypot(pandiCx - copCx, pandiCy - copCy);
+
+        // Dynamischer Alarm: Verfolgung starten bei Annäherung (<195px), abbrechen bei Distanz (>265px)
+        if (!cop.isChasing && distToPandi < ALERT_DIST) {
+          cop.isChasing = true;
+          cop.dirTimer = Math.min(cop.dirTimer, 0.15 / Math.sqrt(diff));
+        } else if (cop.isChasing && distToPandi > ESCAPE_DIST) {
+          cop.isChasing = false;
+        }
+
+        // Geschwindigkeitssteuerung: Pandi läuft mit 190 px/s, Polizist ist minimal langsamer
+        const patrolSpeed = (cop.patrolSpeed || cop.speed || 75) * diff;
+        const baseChase = cop.chaseSpeed || 158;
+        const maxChaseCap = cop.maxChaseSpeed || 170; // Niemals schneller als Pandis 190 px/s!
+        const chaseSpeed = Math.min(maxChaseCap, baseChase * Math.pow(diff, 0.5));
+        const speed = cop.isChasing ? chaseSpeed : patrolSpeed;
+
+        cop.dirTimer -= dt;
+
+        const checkOpen = (dx, dy) => {
+          const probeDist = 12;
+          const testX = cop.x + dx * probeDist;
+          const testY = cop.y + dy * probeDist;
+          for (const w of this.walls) {
+            if (this._rectsOverlap(testX, testY, cop.w, cop.h, w.x, w.y, w.w, w.h)) {
+              return false;
+            }
+          }
+          return true;
+        };
+
+        const blocked = !checkOpen(cop.dir.x, cop.dir.y);
+        if (blocked || cop.dirTimer <= 0) {
+          const possibleDirs = [
+            { x: 1, y: 0 },
+            { x: -1, y: 0 },
+            { x: 0, y: 1 },
+            { x: 0, y: -1 }
+          ].filter((d) => checkOpen(d.x, d.y));
+
+          if (possibleDirs.length > 0) {
+            if (cop.isChasing) {
+              cop.dirTimer = 0.25 + Math.random() * 0.25;
+              // Finde Richtungen, die Pandi im Labyrinth näher bringen
+              const sorted = [...possibleDirs].sort((a, b) => {
+                const distA = Math.hypot(copCx + a.x * 24 - pandiCx, copCy + a.y * 24 - pandiCy);
+                const distB = Math.hypot(copCx + b.x * 24 - pandiCx, copCy + b.y * 24 - pandiCy);
+                return distA - distB;
+              });
+              if (Math.random() < 0.85) {
+                cop.dir = sorted[0];
+              } else {
+                cop.dir = sorted[Math.floor(Math.random() * sorted.length)];
+              }
+            } else {
+              cop.dirTimer = 0.6 + Math.random() * 0.9;
+              const nonReverse = possibleDirs.filter((d) => !(d.x === -cop.dir.x && d.y === -cop.dir.y));
+              if (nonReverse.length > 0) {
+                cop.dir = nonReverse[Math.floor(Math.random() * nonReverse.length)];
+              } else {
+                cop.dir = possibleDirs[0];
+              }
+            }
+          } else {
+            cop.dir.x = -cop.dir.x;
+            cop.dir.y = -cop.dir.y;
+          }
+        }
+
+        cop.vx = cop.dir.x * speed;
+        cop.vy = cop.dir.y * speed;
+
+        cop.x += cop.vx * dt;
+        for (const w of this.walls) {
+          if (this._rectsOverlap(cop.x, cop.y, cop.w, cop.h, w.x, w.y, w.w, w.h)) {
+            if (cop.vx > 0) cop.x = w.x - cop.w;
+            else if (cop.vx < 0) cop.x = w.x + w.w;
+            cop.dirTimer = 0;
+          }
+        }
+
+        cop.y += cop.vy * dt;
+        for (const w of this.walls) {
+          if (this._rectsOverlap(cop.x, cop.y, cop.w, cop.h, w.x, w.y, w.w, w.h)) {
+            if (cop.vy > 0) cop.y = w.y - cop.h;
+            else if (cop.vy < 0) cop.y = w.y + w.h;
+            cop.dirTimer = 0;
+          }
+        }
+
+        const hitCop =
+          p.x + p.w - 4 > cop.x &&
+          p.x + 4 < cop.x + cop.w &&
+          p.y + p.h - 3 > cop.y &&
+          p.y + 3 < cop.y + cop.h;
+
+        if (hitCop) {
+          this.damagePandi("POLIZIST!");
+        }
+      }
+    }
+
     _updateCops(dt, p) {
+      const diff = this.getDifficultyMultiplier();
       for (const cop of this.cops) {
         if (cop.ladderCooldown > 0) {
           cop.ladderCooldown = Math.max(0, cop.ladderCooldown - dt);
@@ -615,7 +861,7 @@
             cop.vy = 0;
           } else {
             cop.x += (lad.x - cop.w * 0.5 - cop.x) * Math.min(1, 8 * dt);
-            cop.y += (cop.vy || -65) * dt;
+            cop.y += (cop.vy || (-65 * diff)) * dt;
 
             const reachedTop = cop.y <= lad.top - cop.h;
             const reachedBottom = cop.y + cop.h >= lad.bottom;
@@ -627,8 +873,8 @@
               cop.onLadder = false;
               cop.activeLadder = null;
               cop.vy = 0;
-              cop.ladderCooldown = 0.8;
-              const spd = 64 + Math.random() * 30;
+              cop.ladderCooldown = 0.8 / Math.sqrt(diff);
+              const spd = (64 + Math.random() * 30) * diff;
               cop.vx = (Math.random() < 0.5 ? -1 : 1) * spd;
             }
           }
@@ -670,7 +916,7 @@
                   if (!canGoDown) dirY = -1;
                   cop.onLadder = true;
                   cop.activeLadder = touchingLadder;
-                  cop.vy = dirY * (58 + Math.random() * 24);
+                  cop.vy = dirY * (58 + Math.random() * 24) * diff;
                   cop.vx = 0;
                 }
               }
@@ -679,8 +925,8 @@
             if (!cop.onLadder) {
               cop.dirTimer -= dt;
               if (cop.dirTimer <= 0) {
-                cop.dirTimer = 0.8 + Math.random() * 1.2;
-                const spd = 62 + Math.random() * 32;
+                cop.dirTimer = (0.8 + Math.random() * 1.2) / Math.sqrt(diff);
+                const spd = (62 + Math.random() * 32) * diff;
                 cop.vx = (Math.random() < 0.5 ? -1 : 1) * spd;
               }
 
@@ -797,7 +1043,8 @@
         // Von Leiter abspringen
         if (p.onBamboo && this.input.jumpBuffered > 0) {
           p.onBamboo = false;
-          p.vy = -345;
+          const bambooJump = this.currentLevelBuilt?.bambooJumpVy ?? (this.currentLevelBuilt?.jumpVy ? Math.max(-230, this.currentLevelBuilt.jumpVy * 0.9) : -345);
+          p.vy = bambooJump;
           p.vx = (moveX || p.facing) * 140;
           this.input.jumpBuffered = 0;
           this.ctx?.sound?.playHit?.();
@@ -816,18 +1063,20 @@
         }
 
         // Horizontale Geschwindigkeit
-        const maxSpeedX = p.onBamboo ? 70 : p.isDucking ? 92 : 160;
-        if (moveX !== 0) {
-          p.vx = moveX * maxSpeedX;
-          p.facing = moveX > 0 ? 1 : -1;
-        } else {
-          const damping = p.onBamboo ? 0.000001 : 0.0001;
-          p.vx *= Math.pow(damping, dt);
-          if (Math.abs(p.vx) < 4) p.vx = 0;
+        if (!p.isSwinging) {
+          const maxSpeedX = p.onBamboo ? 70 : p.isDucking ? 92 : 160;
+          if (moveX !== 0) {
+            p.vx = moveX * maxSpeedX;
+            p.facing = moveX > 0 ? 1 : -1;
+          } else {
+            const damping = p.onBamboo ? 0.000001 : 0.0001;
+            p.vx *= Math.pow(damping, dt);
+            if (Math.abs(p.vx) < 4) p.vx = 0;
+          }
         }
 
-        // Physik & Sprung (wenn nicht an Leiter)
-        if (!p.onBamboo) {
+        // Physik & Sprung (wenn nicht an Leiter oder Liane)
+        if (!p.onBamboo && !p.isSwinging) {
           if (this.input.jumpBuffered > 0 && p.onGround) {
             if (p.isDucking) {
               const b = p.y + p.h;
@@ -835,19 +1084,34 @@
               p.h = p.standH;
               p.y = b - p.h;
             }
-            p.vy = -375;
+            const jumpPower = this.currentLevelBuilt?.jumpVy ?? this.currentLevelDef?.jumpVy ?? -375;
+            p.vy = jumpPower;
             p.onGround = false;
             p.squashY = 1.25;
             this.input.jumpBuffered = 0;
             this.ctx?.sound?.playHit?.();
           }
 
+          const prevTop = p.y;
           const prevBottom = p.y + p.h;
           p.vy += 840 * dt;
           p.x += p.vx * dt;
           p.y += p.vy * dt;
 
           p.onGround = false;
+
+          // Kollision von unten mit Plattformen (Kopf stößt an Decke/Plattform-Unterkante)
+          if (p.vy < 0 && (this.currentLevelBuilt?.solidPlatformsFromBelow || this.currentLevelBuilt?.jumpVy !== undefined)) {
+            for (const plat of this.platforms) {
+              const overlapX = p.x + p.w - 4 > plat.x && p.x + 4 < plat.x + plat.w;
+              if (overlapX && prevTop >= plat.y + plat.h - 6 && p.y <= plat.y + plat.h) {
+                p.y = plat.y + plat.h;
+                p.vy = 0;
+                break;
+              }
+            }
+          }
+
           if (p.vy >= 0) {
             for (const plat of this.platforms) {
               const overlapX = p.x + p.w - 4 > plat.x && p.x + 4 < plat.x + plat.w;
@@ -857,6 +1121,23 @@
                 p.onGround = true;
                 p.squashY = 0.88;
                 break;
+              }
+            }
+          }
+
+          // Sanfte Treppenstufen-Hilfe beim Laufen (für Steintreppen in Level 5)
+          if (!p.onBamboo && (this.input.left || this.input.right)) {
+            const footY = p.y + p.h;
+            for (const plat of this.platforms) {
+              const overlapX = p.x + p.w - 2 > plat.x && p.x + 2 < plat.x + plat.w;
+              if (overlapX) {
+                const diff = footY - plat.y;
+                if (diff > 0 && diff <= 16 && p.vy >= -40) {
+                  p.y = plat.y - p.h;
+                  p.vy = 0;
+                  p.onGround = true;
+                  break;
+                }
               }
             }
           }
@@ -910,27 +1191,13 @@
               this.spawnParticles(this.cage.x, this.cage.y + 16, "#4ade80", 28);
               this.spawnParticles(this.cage.x, this.cage.y + 16, "#facc15", 20);
 
-              const isLastLevel = this.levelIndex >= this.levels.length - 1;
-              if (isLastLevel) {
-                this.isGameWon = true;
-                this.addFloatingText(
-                  this.cage.x - this.camera.x,
-                  this.cage.y - this.camera.y - 18,
-                  "PANDA GERETTET! ADVENTURE VOLLENDET! +600",
-                  "#fef08a"
-                );
-              } else {
-                this.addFloatingText(
-                  this.cage.x - this.camera.x,
-                  this.cage.y - this.camera.y - 14,
-                  "PANDA BEFREIT! +600",
-                  "#fef08a"
-                );
-                setTimeout(() => {
-                  this.setupLevel(this.levelIndex + 1, true);
-                }, 900);
-              }
-              this._updateHud();
+              this.addFloatingText(
+                this.cage.x - this.camera.x,
+                this.cage.y - this.camera.y - 14,
+                "PANDA BEFREIT! +600",
+                "#fef08a"
+              );
+              this.advanceLevel();
             } else if (this.invulnTimer <= 0) {
               this.invulnTimer = 0.8;
               this.addFloatingText(
@@ -944,6 +1211,27 @@
         }
 
         this._updateCops(dt, p);
+
+        // Ausgang erreichen (falls im Level vorhanden, z.B. Level 5 Gipfel-Tor)
+        if (this.exit && !this._isAdvancingLevel) {
+          const exLeft = this.exit.x - this.exit.w * 0.5;
+          const exTop = this.exit.y - this.exit.h * 0.5;
+          if (this._rectsOverlap(p.x, p.y, p.w, p.h, exLeft, exTop, this.exit.w, this.exit.h)) {
+            this.rescuedCount += 1;
+            this.score += 1000;
+            this.ctx?.sound?.playScore?.();
+            this.spawnParticles(this.exit.x, this.exit.y, "#4ade80", 36);
+            this.spawnParticles(this.exit.x, this.exit.y, "#facc15", 30);
+            this.addFloatingText(
+              this.exit.x - this.camera.x,
+              this.exit.y - this.camera.y - 14,
+              "LEVEL GEMEISTERT! +1000",
+              "#fef08a"
+            );
+            this.advanceLevel();
+          }
+        }
+
         this._updateCamera(dt);
       }
 
@@ -1081,7 +1369,7 @@
     }
 
     _drawExit(ctx, exit) {
-      if (!exit) return;
+      if (!exit || exit.customDraw) return;
       const left = exit.x - exit.w * 0.5;
       const top = exit.y - exit.h * 0.5;
       const glow = 0.75 + Math.sin(this.animClock * 5) * 0.25;
@@ -1254,6 +1542,83 @@
       ctx.moveTo(x + radius, y + 2);
       ctx.lineTo(x + w - radius, y + 2);
       ctx.stroke();
+
+      ctx.restore();
+    }
+
+    _drawStoneStairPlatform(ctx, plat) {
+      const { x, y, w, h } = plat;
+      const radius = Math.min(6, h * 0.4);
+
+      ctx.save();
+      // Weicher Schatten unter der Treppenstufe
+      ctx.fillStyle = "rgba(15, 23, 42, 0.4)";
+      ctx.beginPath();
+      ctx.roundRect(x + 2, y + 4, w - 2, h, radius);
+      ctx.fill();
+
+      // Chinesischer Steinblock (Granit/Schiefer mit edlem Farbverlauf)
+      const stoneGrad = ctx.createLinearGradient(x, y, x, y + h);
+      stoneGrad.addColorStop(0, "#64748b");
+      stoneGrad.addColorStop(0.3, "#475569");
+      stoneGrad.addColorStop(0.85, "#334155");
+      stoneGrad.addColorStop(1, "#1e293b");
+
+      ctx.fillStyle = stoneGrad;
+      ctx.strokeStyle = "#1e293b";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, radius);
+      ctx.fill();
+      ctx.stroke();
+
+      // Steintextur & Rillen (Chinesische behauene Treppenstufen)
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+      ctx.lineWidth = 1;
+      for (let sx = x + 10; sx < x + w - 8; sx += 22) {
+        ctx.beginPath();
+        ctx.moveTo(sx, y + 4);
+        ctx.lineTo(sx + 3, y + h - 3);
+        ctx.stroke();
+      }
+
+      // Oberer Lichtkanten-Glanz
+      ctx.strokeStyle = "rgba(241, 245, 249, 0.6)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y + 1.2);
+      ctx.lineTo(x + w - radius, y + 1.2);
+      ctx.stroke();
+
+      // Moosbewuchs (ab und zu auf den Stufen)
+      if (plat.hasMoss) {
+        ctx.fillStyle = "#15803d";
+        ctx.beginPath();
+        ctx.ellipse(x + w * 0.35, y + 2, 9, 3.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#22c55e";
+        ctx.beginPath();
+        ctx.ellipse(x + w * 0.35, y + 1.5, 6, 2.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#4ade80";
+        ctx.beginPath();
+        ctx.arc(x + w * 0.35 - 3, y + 1, 1.2, 0, Math.PI * 2);
+        ctx.arc(x + w * 0.35 + 3, y + 1.2, 1.0, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (w > 60) {
+          ctx.fillStyle = "#16a34a";
+          ctx.beginPath();
+          ctx.ellipse(x + w * 0.75, y + 2, 7, 2.8, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#4ade80";
+          ctx.beginPath();
+          ctx.ellipse(x + w * 0.75, y + 1.5, 4.5, 1.8, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
 
       ctx.restore();
     }
@@ -1718,20 +2083,30 @@
 
       if (this.levelMode === "maze") {
         this._drawBambooWalls(ctx, this.walls, this.camera.x, this.camera.y, w, h);
-        this._drawCoins(ctx, this.coins, this.camera.x, this.camera.y, w, h);
-        this._drawExit(ctx, this.exit);
+        if (this.coins.length > 0) this._drawCoins(ctx, this.coins, this.camera.x, this.camera.y, w, h);
+        if (this.keys.length > 0) this._drawKeys(ctx, this.keys);
+        if (this.cage) this._drawCageAndSecondPanda(ctx, this.cage);
+        for (const cop of this.cops) {
+          this._drawCop(ctx, cop);
+        }
+        if (this.exit) this._drawExit(ctx, this.exit);
       } else {
         for (const bam of this.bamboos) {
           this._drawBamboo(ctx, bam);
         }
         for (const plat of this.platforms) {
-          this._drawGrassHillPlatform(ctx, plat);
+          if (plat.isStone || this.levelMode === "side") {
+            this._drawStoneStairPlatform(ctx, plat);
+          } else {
+            this._drawGrassHillPlatform(ctx, plat);
+          }
         }
-        this._drawKeys(ctx, this.keys);
-        this._drawCageAndSecondPanda(ctx, this.cage);
+        if (this.keys.length > 0) this._drawKeys(ctx, this.keys);
+        if (this.cage) this._drawCageAndSecondPanda(ctx, this.cage);
         for (const cop of this.cops) {
           this._drawCop(ctx, cop);
         }
+        if (this.exit) this._drawExit(ctx, this.exit);
       }
 
       const levelDraw = this.currentLevelBuilt?.drawEntities || this.currentLevelDef?.drawEntities;
@@ -1740,7 +2115,7 @@
       }
 
       // Pandi zeichnen
-      if (!(this.invulnTimer > 0 && Math.floor(this.animClock * 16) % 2 === 0)) {
+      if (!this.currentLevelBuilt?.hidePandi && !(this.invulnTimer > 0 && Math.floor(this.animClock * 16) % 2 === 0)) {
         this.drawPanda(
           ctx,
           this.pandi.x,
@@ -1773,9 +2148,13 @@
         ctx.globalAlpha = alpha;
         ctx.strokeStyle = "rgba(15, 23, 42, 0.9)";
         ctx.lineWidth = 3;
-        ctx.strokeText(ft.text, ft.x, ft.y);
         ctx.fillStyle = ft.color;
-        ctx.fillText(ft.text, ft.x, ft.y);
+        const lines = String(ft.text).split("\n");
+        lines.forEach((line, lineIdx) => {
+          const ly = ft.y + lineIdx * 15;
+          ctx.strokeText(line, ft.x, ly);
+          ctx.fillText(line, ft.x, ly);
+        });
       }
       ctx.globalAlpha = 1;
 

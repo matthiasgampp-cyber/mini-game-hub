@@ -119,6 +119,120 @@ body,
   box-shadow: 0 0 16px rgba(34, 211, 238, 0.45);
 }
 
+/* =========================================================
+   Virtual Analog Joystick Styles
+   ========================================================= */
+
+#gpad-joystick-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.virtual-joystick-base {
+  position: relative;
+  width: 114px;
+  height: 114px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.78) 0%, rgba(6, 10, 24, 0.92) 100%);
+  border: 2px solid rgba(34, 211, 238, 0.38);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.2), inset 0 0 16px rgba(34, 211, 238, 0.12);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.virtual-joystick-base.is-active {
+  border-color: rgba(34, 211, 238, 0.75);
+  box-shadow: 0 0 22px rgba(34, 211, 238, 0.38), inset 0 0 18px rgba(34, 211, 238, 0.22);
+}
+
+.virtual-joystick-dir {
+  position: absolute;
+  color: rgba(34, 211, 238, 0.3);
+  font-size: 11px;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  transition: color 0.1s ease, text-shadow 0.1s ease, transform 0.1s ease;
+}
+
+.virtual-joystick-dir.dir-up {
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.virtual-joystick-dir.dir-down {
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.virtual-joystick-dir.dir-left {
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.virtual-joystick-dir.dir-right {
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.virtual-joystick-dir.active {
+  color: #22d3ee;
+  text-shadow: 0 0 8px #22d3ee, 0 0 16px rgba(34, 211, 238, 0.8);
+  transform: translateX(-50%) scale(1.25);
+}
+
+.virtual-joystick-dir.dir-left.active,
+.virtual-joystick-dir.dir-right.active {
+  transform: translateY(-50%) scale(1.25);
+}
+
+.virtual-joystick-stick {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 48px;
+  height: 48px;
+  margin-top: -24px;
+  margin-left: -24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #38bdf8 0%, #0284c7 65%, #0369a1 100%);
+  border: 2px solid rgba(224, 242, 254, 0.85);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  will-change: transform;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.virtual-joystick-stick.is-dragging {
+  transition: none !important;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.9), inset 0 2px 4px rgba(255, 255, 255, 0.7);
+  background: radial-gradient(circle at 35% 35%, #7dd3fc 0%, #0ea5e9 60%, #0284c7 100%);
+}
+
+.virtual-joystick-pip {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(240, 249, 255, 0.95);
+  box-shadow: 0 0 6px #22d3ee;
+}
+
 /* Portrait specific optimizations */
 @media (orientation: portrait) {
   #global-mini-controls {
@@ -135,6 +249,18 @@ body,
     min-width: 96px;
     height: 48px;
     font-size: 12px;
+  }
+
+  .virtual-joystick-base {
+    width: 114px;
+    height: 114px;
+  }
+
+  .virtual-joystick-stick {
+    width: 48px;
+    height: 48px;
+    margin-top: -24px;
+    margin-left: -24px;
   }
 }
 
@@ -156,5 +282,21 @@ body,
     min-width: 88px;
     height: 44px;
     font-size: 11px;
+  }
+
+  .virtual-joystick-base {
+    width: 96px;
+    height: 96px;
+  }
+
+  .virtual-joystick-stick {
+    width: 42px;
+    height: 42px;
+    margin-top: -21px;
+    margin-left: -21px;
+  }
+
+  .virtual-joystick-dir {
+    font-size: 9px;
   }
 }

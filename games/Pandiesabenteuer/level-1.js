@@ -203,6 +203,9 @@
       keys,
       cage,
       cops,
+      jumpVy: -240, // Begrenzte Sprunghöhe (~34px): Verhindert direktes Hochspringen zur oberen Plattform (89px)!
+      bambooJumpVy: -210,
+      solidPlatformsFromBelow: true,
       drawBackground: drawLevel1Background
     };
   }
@@ -216,6 +219,9 @@
     name: "POLIZISTEN-LEVEL",
     mode: "platform",
     keysRequired: 1,
+    jumpVy: -240,
+    bambooJumpVy: -210,
+    solidPlatformsFromBelow: true,
     drawBackground: drawLevel1Background,
     build: buildLevel1
   });

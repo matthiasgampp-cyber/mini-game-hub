@@ -106,8 +106,10 @@
   };
 
   let controlMode = storage.get("control_mode", "buttons"); // "buttons" | "touch"
+  let dpadMode = storage.get("dpad_mode", "joystick"); // "joystick" | "arrows"
   const heldControls = { left: false, right: false, up: false, down: false, jump: false };
   const jumpListeners = new Set();
+  let virtualJoystickInstance = null;
 
   const games = new Map();
   let activeGameId = null;
@@ -123,6 +125,7 @@
     stage: document.getElementById("game-stage"),
     gameGrid: document.getElementById("game-grid"),
     homeBtn: document.getElementById("hub-home-btn"),
+    dpadToggleBtn: document.getElementById("dpad-toggle-btn"),
     controlModeBtn: document.getElementById("control-mode-btn"),
     pauseBtn: document.getElementById("pause-toggle-btn"),
     soundBtn: document.getElementById("sound-toggle-btn"),
@@ -134,6 +137,13 @@
     exitToHubBtn: document.getElementById("exit-to-hub-btn")
   };
 
+  const dirMap = {
+    left: { key: "ArrowLeft", code: "ArrowLeft" },
+    right: { key: "ArrowRight", code: "ArrowRight" },
+    up: { key: "ArrowUp", code: "ArrowUp" },
+    down: { key: "ArrowDown", code: "ArrowDown" }
+  };
+
   function dispatchKey(type, key, code) {
     window.dispatchEvent(
       new KeyboardEvent(type, {
@@ -143,6 +153,36 @@
         cancelable: true
       })
     );
+  }
+
+  function setDirection(action, active) {
+    if (action === "jump") {
+      if (active && !heldControls.jump) {
+        heldControls.jump = true;
+        triggerGlobalJump();
+      } else if (!active && heldControls.jump) {
+        heldControls.jump = false;
+        dispatchKey("keyup", " ", "Space");
+      }
+      return;
+    }
+
+    const spec = dirMap[action];
+    if (!spec) return;
+    const isCurrentlyHeld = Boolean(heldControls[action]);
+    const nextState = Boolean(active);
+
+    if (isCurrentlyHeld !== nextState) {
+      heldControls[action] = nextState;
+      dispatchKey(nextState ? "keydown" : "keyup", spec.key, spec.code);
+    }
+  }
+
+  function setDirections(dirs) {
+    if (!dirs) return;
+    for (const [action, active] of Object.entries(dirs)) {
+      setDirection(action, active);
+    }
   }
 
   function releaseAllHeldControls() {
@@ -166,6 +206,9 @@
       heldControls.jump = false;
       dispatchKey("keyup", " ", "Space");
     }
+    try {
+      virtualJoystickInstance?.reset?.();
+    } catch (_) {}
   }
 
   function triggerGlobalJump() {
@@ -186,10 +229,37 @@
       dom.controlModeBtn.textContent =
         controlMode === "buttons" ? "🎮 Buttons" : "👆 Nur Touch";
     }
+
+    if (dom.dpadToggleBtn) {
+      const showDpadToggle = Boolean(activeGameId) && controlMode === "buttons";
+      dom.dpadToggleBtn.classList.toggle("hidden", !showDpadToggle);
+      dom.dpadToggleBtn.textContent = dpadMode === "joystick" ? "🕹️ Stick" : "◀▶ Pfeile";
+    }
+
     if (globalPadEl) {
       const showPad = Boolean(activeGameId) && !isPaused && controlMode === "buttons";
       globalPadEl.classList.toggle("hidden", !showPad);
-      if (!showPad) releaseAllHeldControls();
+
+      const joystickCont = globalPadEl.querySelector("#gpad-joystick-container");
+      const arrowsCont = globalPadEl.querySelector("#gpad-arrows-container");
+      const padToggleBtn = globalPadEl.querySelector("#gpad-toggle-type-btn");
+
+      if (joystickCont) {
+        joystickCont.classList.toggle("hidden", dpadMode !== "joystick");
+        if (dpadMode === "joystick" && virtualJoystickInstance) {
+          virtualJoystickInstance.updateGeometry();
+        }
+      }
+      if (arrowsCont) {
+        arrowsCont.classList.toggle("hidden", dpadMode !== "arrows");
+      }
+      if (padToggleBtn) {
+        padToggleBtn.textContent = dpadMode === "joystick" ? "🕹️ Stick" : "◀▶ Pfeile";
+      }
+
+      if (!showPad) {
+        releaseAllHeldControls();
+      }
     }
   }
 
@@ -202,13 +272,28 @@
     syncControlUI();
   }
 
+  function setDpadMode(nextDpad) {
+    dpadMode = nextDpad === "arrows" ? "arrows" : "joystick";
+    storage.set("dpad_mode", dpadMode);
+    releaseAllHeldControls();
+    syncControlUI();
+  }
+
+  function toggleDpadMode() {
+    setDpadMode(dpadMode === "joystick" ? "arrows" : "joystick");
+  }
+
   function ensureGlobalPad() {
-    if (globalPadEl && globalPadEl.isConnected) return;
+    if (globalPadEl && globalPadEl.isConnected) {
+      syncControlUI();
+      return;
+    }
     if (!dom.stage) return;
 
     const existing = document.getElementById("global-mini-controls");
     if (existing) {
       globalPadEl = existing;
+      syncControlUI();
       return;
     }
 
@@ -217,24 +302,58 @@
     pad.className =
       "hidden pointer-events-none absolute inset-x-0 bottom-0 z-25 flex items-end justify-between px-3 py-2 touch-none select-none";
     pad.innerHTML = `
-      <div class="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
-        <button type="button" data-gpad="left" aria-label="Links" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-cyan-400/40 bg-slate-900/85 text-cyan-200 font-bold text-base shadow-lg shadow-cyan-950/40 active:scale-95 active:bg-cyan-500/30 touch-none select-none">◀</button>
-        <button type="button" data-gpad="right" aria-label="Rechts" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-cyan-400/40 bg-slate-900/85 text-cyan-200 font-bold text-base shadow-lg shadow-cyan-950/40 active:scale-95 active:bg-cyan-500/30 touch-none select-none">▶</button>
-        <button type="button" data-gpad="up" aria-label="Hoch" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-emerald-400/40 bg-slate-900/85 text-emerald-200 font-bold text-base shadow-lg shadow-emerald-950/40 active:scale-95 active:bg-emerald-500/30 touch-none select-none">▲</button>
-        <button type="button" data-gpad="down" aria-label="Runter" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-amber-400/40 bg-slate-900/85 text-amber-200 font-bold text-base shadow-lg shadow-amber-950/40 active:scale-95 active:bg-amber-500/30 touch-none select-none">▼</button>
+      <div class="pointer-events-auto flex items-end gap-2 sm:gap-2.5">
+        <div id="gpad-joystick-container" class="touch-none select-none"></div>
+
+        <div id="gpad-arrows-container" class="hidden flex items-center gap-1.5 sm:gap-2">
+          <button type="button" data-gpad="left" aria-label="Links" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-cyan-400/40 bg-slate-900/85 text-cyan-200 font-bold text-base shadow-lg shadow-cyan-950/40 active:scale-95 active:bg-cyan-500/30 touch-none select-none">◀</button>
+          <button type="button" data-gpad="right" aria-label="Rechts" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-cyan-400/40 bg-slate-900/85 text-cyan-200 font-bold text-base shadow-lg shadow-cyan-950/40 active:scale-95 active:bg-cyan-500/30 touch-none select-none">▶</button>
+          <button type="button" data-gpad="up" aria-label="Hoch" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-emerald-400/40 bg-slate-900/85 text-emerald-200 font-bold text-base shadow-lg shadow-emerald-950/40 active:scale-95 active:bg-emerald-500/30 touch-none select-none">▲</button>
+          <button type="button" data-gpad="down" aria-label="Runter" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-amber-400/40 bg-slate-900/85 text-amber-200 font-bold text-base shadow-lg shadow-amber-950/40 active:scale-95 active:bg-amber-500/30 touch-none select-none">▼</button>
+        </div>
+
+        <button
+          type="button"
+          id="gpad-toggle-type-btn"
+          aria-label="Steuerung wechseln"
+          class="mb-1 px-2.5 py-1 sm:py-1.5 rounded-lg border border-cyan-400/35 bg-slate-900/80 text-[10px] sm:text-xs font-bold text-cyan-300 hover:bg-cyan-500/20 active:scale-95 transition shadow-sm backdrop-blur-sm touch-none select-none"
+        >
+          🕹️ Stick
+        </button>
       </div>
-      <div class="pointer-events-auto flex items-center">
+
+      <div class="pointer-events-auto flex items-end">
         <button type="button" data-gpad="jump" aria-label="Springen" class="px-4 h-11 sm:h-12 rounded-xl border border-cyan-300/60 bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-orbitron text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-cyan-500/30 active:scale-95 touch-none select-none">Springen</button>
       </div>
     `;
 
-    const dirMap = {
-      left: { key: "ArrowLeft", code: "ArrowLeft" },
-      right: { key: "ArrowRight", code: "ArrowRight" },
-      up: { key: "ArrowUp", code: "ArrowUp" },
-      down: { key: "ArrowDown", code: "ArrowDown" }
-    };
+    // Virtual Joystick montieren
+    const joystickContainer = pad.querySelector("#gpad-joystick-container");
+    if (window.VirtualJoystick && joystickContainer) {
+      virtualJoystickInstance = new window.VirtualJoystick({
+        container: joystickContainer,
+        onMove: ({ directions }) => {
+          if (!activeGameId || isPaused || controlMode !== "buttons") return;
+          sound.ensureContext();
+          setDirections(directions);
+        },
+        onRelease: () => {
+          setDirections({ left: false, right: false, up: false, down: false });
+        }
+      });
+      window.VIRTUAL_JOYSTICK = virtualJoystickInstance;
+    }
 
+    // Toggle-Button im Pad
+    const padToggleBtn = pad.querySelector("#gpad-toggle-type-btn");
+    padToggleBtn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      sound.ensureContext();
+      toggleDpadMode();
+    });
+
+    // Touch-Buttons für D-Pad und Jump
     pad.querySelectorAll("[data-gpad]").forEach((btn) => {
       const action = btn.getAttribute("data-gpad");
 
@@ -249,20 +368,7 @@
         if (!activeGameId || isPaused || controlMode !== "buttons") return;
         sound.ensureContext();
 
-        if (action === "jump") {
-          if (!heldControls.jump) {
-            heldControls.jump = true;
-            triggerGlobalJump();
-          }
-          return;
-        }
-
-        const spec = dirMap[action];
-        if (!spec) return;
-        if (!heldControls[action]) {
-          heldControls[action] = true;
-          dispatchKey("keydown", spec.key, spec.code);
-        }
+        setDirection(action, true);
       };
 
       const release = (ev) => {
@@ -273,20 +379,7 @@
             btn.releasePointerCapture(ev.pointerId);
           } catch (_) {}
         }
-        if (action === "jump") {
-          if (heldControls.jump) {
-            heldControls.jump = false;
-            dispatchKey("keyup", " ", "Space");
-          }
-          return;
-        }
-
-        const spec = dirMap[action];
-        if (!spec) return;
-        if (heldControls[action]) {
-          heldControls[action] = false;
-          dispatchKey("keyup", spec.key, spec.code);
-        }
+        setDirection(action, false);
       };
 
       btn.addEventListener("pointerdown", press);
@@ -297,14 +390,22 @@
 
     dom.stage.appendChild(pad);
     globalPadEl = pad;
+    syncControlUI();
   }
 
   window.GLOBAL_MOBILE_CONTROLS = {
     get mode() {
       return controlMode;
     },
-    held: heldControls,
     setMode: setControlMode,
+    get dpadMode() {
+      return dpadMode;
+    },
+    setDpadMode,
+    toggleDpadMode,
+    held: heldControls,
+    setDirection,
+    setDirections,
     triggerJump: triggerGlobalJump,
     releaseAll: releaseAllHeldControls
   };
@@ -397,6 +498,10 @@
     }
     releaseAllHeldControls();
     jumpListeners.clear();
+    if (virtualJoystickInstance) {
+      virtualJoystickInstance.unmount();
+      virtualJoystickInstance = null;
+    }
     if (!activeGameId) return;
     const current = games.get(activeGameId);
     if (current && typeof current.destroy === "function") {
@@ -558,6 +663,10 @@
     }
   });
 
+  dom.dpadToggleBtn?.addEventListener("click", () => {
+    sound.ensureContext();
+    toggleDpadMode();
+  });
   dom.controlModeBtn?.addEventListener("click", () => {
     sound.ensureContext();
     setControlMode(controlMode === "buttons" ? "touch" : "buttons");

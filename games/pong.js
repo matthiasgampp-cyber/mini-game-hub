@@ -326,7 +326,7 @@
       this.touches.delete(e.pointerId);
     },
 
-    applyTouchControls() {
+    applyTouchControls(dt = 0.016) {
       const midX = this.arena.x + this.arena.width / 2;
       const midY = this.arena.y + this.arena.height / 2;
 
@@ -380,6 +380,17 @@
             p.x = Math.max(this.arena.x, Math.min(this.arena.x + this.arena.width - p.w, bestPt.x - p.w / 2));
           } else {
             p.y = Math.max(this.arena.y, Math.min(this.arena.y + this.arena.height - p.h, bestPt.y - p.h / 2));
+          }
+        } else if (p.edge === "bottom") {
+          // Virtueller Joystick / D-Pad Steuerung für Spieler 1
+          const gHeld = window.GLOBAL_MOBILE_CONTROLS?.held || this.ctx?.controls?.held;
+          if (gHeld) {
+            const spd = this.arena.width * 1.05 * dt;
+            if (gHeld.left) {
+              p.x = Math.max(this.arena.x, p.x - spd);
+            } else if (gHeld.right) {
+              p.x = Math.min(this.arena.x + this.arena.width - p.w, p.x + spd);
+            }
           }
         }
       }
@@ -513,7 +524,7 @@
 
       if (this.phase !== "playing" || this.paused) return;
 
-      this.applyTouchControls();
+      this.applyTouchControls(dt);
       this.updateAI(dt);
 
       const b = this.ball;

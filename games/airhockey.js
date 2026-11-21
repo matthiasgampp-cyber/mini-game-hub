@@ -330,8 +330,20 @@
         const liftY = p1Touch.pointerType === "touch" ? -16 : 0;
         this.moveMalletTowards(this.p1, p1Touch.x, p1Touch.y + liftY, 1450, dt);
       } else {
-        this.p1.vx *= 0.7;
-        this.p1.vy *= 0.7;
+        const gHeld = window.GLOBAL_MOBILE_CONTROLS?.held;
+        if (gHeld && (gHeld.left || gHeld.right || gHeld.up || gHeld.down)) {
+          let ax = 0;
+          let ay = 0;
+          if (gHeld.left) ax -= 1;
+          if (gHeld.right) ax += 1;
+          if (gHeld.up) ay -= 1;
+          if (gHeld.down) ay += 1;
+          const spd = 750;
+          this.moveMalletTowards(this.p1, this.p1.x + ax * 120, this.p1.y + ay * 120, spd, dt);
+        } else {
+          this.p1.vx *= 0.7;
+          this.p1.vy *= 0.7;
+        }
       }
 
       if (this.mode === "pvp") {

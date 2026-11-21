@@ -21,7 +21,12 @@
   const LEVEL_SCRIPTS = [
     "./games/Pandiesabenteuer/level-1.js",
     "./games/Pandiesabenteuer/level-2.js",
-    "./games/Pandiesabenteuer/level-3.js"
+    "./games/Pandiesabenteuer/level-3.js",
+    "./games/Pandiesabenteuer/level-4.js",
+    "./games/Pandiesabenteuer/level-5.js",
+    "./games/Pandiesabenteuer/level-6.js",
+    "./games/Pandiesabenteuer/level-7.js",
+    "./games/Pandiesabenteuer/level-8.js"
   ];
 
   function attachBackgroundsToLevels() {
@@ -36,6 +41,21 @@
       }
       if (list[2] && typeof list[2].drawBackground !== "function" && typeof bgMap.level3 === "function") {
         list[2].drawBackground = bgMap.level3;
+      }
+      if (list[3] && typeof list[3].drawBackground !== "function" && typeof bgMap.level4 === "function") {
+        list[3].drawBackground = bgMap.level4;
+      }
+      if (list[4] && typeof list[4].drawBackground !== "function" && typeof bgMap.level5 === "function") {
+        list[4].drawBackground = bgMap.level5;
+      }
+      if (list[5] && typeof list[5].drawBackground !== "function" && typeof bgMap.level6 === "function") {
+        list[5].drawBackground = bgMap.level6;
+      }
+      if (list[6] && typeof list[6].drawBackground !== "function" && typeof bgMap.level7 === "function") {
+        list[6].drawBackground = bgMap.level7;
+      }
+      if (list[7] && typeof list[7].drawBackground !== "function" && typeof bgMap.level8 === "function") {
+        list[7].drawBackground = bgMap.level8;
       }
     }
   }
@@ -89,9 +109,9 @@
     name: "Pandies Abenteuer",
     icon: "🐼",
     tag: "Adventure",
-    subtitle: "Schlüssel holen, Labyrinth meistern & Drachenkanonen trotzen!",
+    subtitle: "Labyrinth, Drachenkanonen, Dschungel & der epische Roboter-Panda Bosskampf!",
     description:
-      "Klettere an Bambusstangen, weiche den Polizisten aus, finde den Ausgang im Labyrinth und meistere die Herzchen-Kanonen am Palast!",
+      "Schwinge dich über Krokodile, aktiviere den Riesen-Roboterpanda, schlage mit dem Bambusstab zu und besiege den Polizeiroboter-Boss!",
     init: (ctx) => window.PANDIES_ABENTEUER_GAME?.init(ctx),
     start: () => window.PANDIES_ABENTEUER_GAME?.start(),
     pause: () => window.PANDIES_ABENTEUER_GAME?.pause(),

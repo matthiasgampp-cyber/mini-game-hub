@@ -63,12 +63,16 @@
     try {
       baseControls?.releaseAll?.();
     } catch (_) {}
+    try {
+      window.VIRTUAL_JOYSTICK?.reset?.();
+    } catch (_) {}
   }
 
   function syncGlobalPadState() {
     removeDuplicateOverlays();
     const miniPad = document.getElementById("global-mini-controls");
     const mode = baseControls?.mode || window.GLOBAL_MOBILE_CONTROLS?.mode || "buttons";
+    const dpadMode = baseControls?.dpadMode || window.GLOBAL_MOBILE_CONTROLS?.dpadMode || "joystick";
     const pauseOverlay = document.getElementById("pause-overlay");
     const modalOpen = pauseOverlay && !pauseOverlay.classList.contains("hidden");
 
@@ -78,6 +82,22 @@
         releaseAllHeld();
       } else {
         miniPad.classList.remove("hidden");
+        const joystickCont = miniPad.querySelector("#gpad-joystick-container");
+        const arrowsCont = miniPad.querySelector("#gpad-arrows-container");
+        const padToggleBtn = miniPad.querySelector("#gpad-toggle-type-btn");
+
+        if (joystickCont) {
+          joystickCont.classList.toggle("hidden", dpadMode !== "joystick");
+          if (dpadMode === "joystick") {
+            window.VIRTUAL_JOYSTICK?.updateGeometry?.();
+          }
+        }
+        if (arrowsCont) {
+          arrowsCont.classList.toggle("hidden", dpadMode !== "arrows");
+        }
+        if (padToggleBtn) {
+          padToggleBtn.textContent = dpadMode === "joystick" ? "🕹️ Stick" : "◀▶ Pfeile";
+        }
       }
     }
   }
@@ -147,6 +167,23 @@
     setMode(nextMode) {
       baseControls?.setMode?.(nextMode);
       syncGlobalPadState();
+    },
+    get dpadMode() {
+      return baseControls?.dpadMode || "joystick";
+    },
+    setDpadMode(nextDpad) {
+      baseControls?.setDpadMode?.(nextDpad);
+      syncGlobalPadState();
+    },
+    toggleDpadMode() {
+      baseControls?.toggleDpadMode?.();
+      syncGlobalPadState();
+    },
+    setDirection(action, active) {
+      baseControls?.setDirection?.(action, active);
+    },
+    setDirections(dirs) {
+      baseControls?.setDirections?.(dirs);
     },
     held: state.held,
     triggerJump() {

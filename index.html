@@ -46,6 +46,14 @@
 
       <div class="flex items-center gap-2">
         <button
+          id="dpad-toggle-btn"
+          type="button"
+          aria-label="Steuerungsmodus (Joystick / Pfeile)"
+          class="hidden px-2.5 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase border border-cyan-400/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 active:scale-95 transition"
+        >
+          🕹️ Stick
+        </button>
+        <button
           id="control-mode-btn"
           type="button"
           class="hidden px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider uppercase border border-cyan-400/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 active:scale-95 transition"
@@ -144,6 +152,7 @@
   <script src="games/yetiadventure.js"></script>
   <script src="./games/pandiesabenteuer.js"></script>
   <script src="./games/Pandiesabenteuer/index.js"></script>
+  <script src="./js/virtual-joystick.js"></script>
   <script src="./js/global-controls-fix.js"></script>
 </body>
 </html>
