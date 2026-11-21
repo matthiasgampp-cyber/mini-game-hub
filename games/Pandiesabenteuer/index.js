@@ -1,13 +1,48 @@
 (() => {
   "use strict";
 
+  const registeredLevels = [];
+
+  window.PANDIES_ABENTEUER_LEVELS = window.PANDIES_ABENTEUER_LEVELS || {
+    register(level) {
+      if (!level || typeof level.build !== "function") return;
+      const existingIdx = registeredLevels.findIndex((item) => item.id && item.id === level.id);
+      if (existingIdx >= 0) {
+        registeredLevels[existingIdx] = level;
+      } else {
+        registeredLevels.push(level);
+      }
+    },
+    list() {
+      return registeredLevels;
+    }
+  };
+
   const LEVEL_SCRIPTS = [
     "./games/Pandiesabenteuer/level-1.js",
-    "./games/Pandiesabenteuer/level-2.js"
+    "./games/Pandiesabenteuer/level-2.js",
+    "./games/Pandiesabenteuer/level-3.js"
   ];
+
+  function attachBackgroundsToLevels() {
+    const bgMap = window.PANDIES_ABENTEUER_LEVEL_BACKGROUNDS || {};
+    const list = window.PANDIES_ABENTEUER_LEVELS?.list?.();
+    if (Array.isArray(list)) {
+      if (list[0] && typeof list[0].drawBackground !== "function" && typeof bgMap.level1 === "function") {
+        list[0].drawBackground = bgMap.level1;
+      }
+      if (list[1] && typeof list[1].drawBackground !== "function" && typeof bgMap.level2 === "function") {
+        list[1].drawBackground = bgMap.level2;
+      }
+      if (list[2] && typeof list[2].drawBackground !== "function" && typeof bgMap.level3 === "function") {
+        list[2].drawBackground = bgMap.level3;
+      }
+    }
+  }
 
   function loadScriptsSequential(urls, index = 0) {
     if (index >= urls.length) {
+      attachBackgroundsToLevels();
       window.PANDIES_ABENTEUER_GAME?.reloadLevels?.();
       return;
     }
@@ -31,6 +66,7 @@
       "load",
       () => {
         script.dataset.loaded = "true";
+        attachBackgroundsToLevels();
         loadScriptsSequential(urls, index + 1);
       },
       { once: true }
@@ -53,9 +89,9 @@
     name: "Pandies Abenteuer",
     icon: "🐼",
     tag: "Adventure",
-    subtitle: "Schlüssel rechts Mitte holen & 2. Panda oben befreien",
+    subtitle: "Schlüssel holen, Labyrinth meistern & Drachenkanonen trotzen!",
     description:
-      "Starte unten in der Mitte, hole rechts in der Mitte den Schlüssel, weiche den Polizisten aus und befreie den 2. Panda ganz oben – danach geht es ins große Bambus-Labyrinth.",
+      "Klettere an Bambusstangen, weiche den Polizisten aus, finde den Ausgang im Labyrinth und meistere die Herzchen-Kanonen am Palast!",
     init: (ctx) => window.PANDIES_ABENTEUER_GAME?.init(ctx),
     start: () => window.PANDIES_ABENTEUER_GAME?.start(),
     pause: () => window.PANDIES_ABENTEUER_GAME?.pause(),

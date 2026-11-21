@@ -25,7 +25,7 @@
 <body class="h-full w-full overflow-hidden bg-[#04040a] text-slate-100 font-rajdhani touch-action-none">
   <div id="app" class="relative h-full w-full flex flex-col">
     <!-- Globale Top-Leiste -->
-    <header class="relative z-20 flex items-center justify-between px-4 py-3 border-b border-cyan-500/20 bg-slate-950/75 backdrop-blur-md">
+    <header class="relative z-20 shrink-0 flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-cyan-500/20 bg-slate-950/75 backdrop-blur-md">
       <div class="flex items-center gap-3">
         <button
           id="hub-home-btn"
@@ -91,8 +91,8 @@
     </main>
 
     <!-- Aktive Spielansicht -->
-    <section id="game-stage-wrapper" class="hidden relative flex-1 w-full h-full overflow-hidden">
-      <div id="game-stage" class="relative w-full h-full touch-none"></div>
+    <section id="game-stage-wrapper" class="hidden relative flex-1 w-full min-h-0 overflow-hidden">
+      <div id="game-stage" class="relative w-full h-full touch-none overflow-hidden"></div>
 
       <!-- Pause-Overlay -->
       <div

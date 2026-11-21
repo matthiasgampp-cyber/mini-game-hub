@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const ROTATION_PAUSE_MS = 2500; // 2.5 Sekunden Pause beim Drehen des Handys
+  const ROTATION_PAUSE_MS = 180; // Schnelle, weiche Entprellung beim Drehen des Handys
 
   const baseControls = window.GLOBAL_MOBILE_CONTROLS || null;
 
@@ -73,28 +73,13 @@
     const modalOpen = pauseOverlay && !pauseOverlay.classList.contains("hidden");
 
     if (miniPad) {
-      if (state.pausedByRotation || modalOpen || mode !== "buttons") {
+      if (modalOpen || mode !== "buttons") {
         miniPad.classList.add("hidden");
         releaseAllHeld();
+      } else {
+        miniPad.classList.remove("hidden");
       }
     }
-  }
-
-  function ensureRotationBanner() {
-    let banner = document.getElementById("global-rotation-pause-banner");
-    if (!banner) {
-      banner = document.createElement("div");
-      banner.id = "global-rotation-pause-banner";
-      banner.className =
-        "fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/75 backdrop-blur-xs pointer-events-none select-none";
-      banner.innerHTML = `
-        <div class="px-5 py-3 rounded-2xl bg-slate-900 border border-amber-400/40 text-amber-200 font-orbitron text-sm shadow-2xl text-center">
-          🔄 HANDY WIRD GEDREHT... <span data-rot-sec="true">2.5</span>s
-        </div>
-      `;
-      document.body.appendChild(banner);
-    }
-    return banner;
   }
 
   function pauseActiveGame() {
@@ -123,36 +108,19 @@
 
   function startRotationGracePeriod() {
     state.pausedByRotation = true;
-    state.rotationDeadline = performance.now() + ROTATION_PAUSE_MS;
-
     releaseAllHeld();
     pauseActiveGame();
-    syncGlobalPadState();
-
-    const banner = ensureRotationBanner();
-    banner.classList.remove("hidden");
-    banner.classList.add("flex");
 
     if (state.rotationTimer) {
-      clearInterval(state.rotationTimer);
+      clearTimeout(state.rotationTimer);
     }
 
-    const secEl = banner.querySelector('[data-rot-sec="true"]');
-    state.rotationTimer = setInterval(() => {
-      const remMs = Math.max(0, state.rotationDeadline - performance.now());
-      if (secEl) {
-        secEl.textContent = (remMs / 1000).toFixed(1);
-      }
-      if (remMs <= 0) {
-        clearInterval(state.rotationTimer);
-        state.rotationTimer = null;
-        state.pausedByRotation = false;
-        banner.classList.add("hidden");
-        banner.classList.remove("flex");
-        syncGlobalPadState();
-        resumeActiveGame();
-      }
-    }, 100);
+    state.rotationTimer = setTimeout(() => {
+      state.rotationTimer = null;
+      state.pausedByRotation = false;
+      syncGlobalPadState();
+      resumeActiveGame();
+    }, ROTATION_PAUSE_MS);
   }
 
   function handleViewportChange() {
@@ -162,6 +130,12 @@
       startRotationGracePeriod();
     } else {
       syncGlobalPadState();
+      const active = getActiveGameEntry();
+      try {
+        active?.resize?.();
+        active?.instance?.resize?.();
+        window.PANDIES_ABENTEUER_GAME?.resize?.();
+      } catch (_) {}
     }
   }
 
@@ -197,7 +171,7 @@
   };
 
   window.addEventListener("orientationchange", () => {
-    setTimeout(handleViewportChange, 80);
+    setTimeout(handleViewportChange, 60);
   });
   window.addEventListener("resize", handleViewportChange);
 

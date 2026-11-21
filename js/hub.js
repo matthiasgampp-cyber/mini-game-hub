@@ -215,16 +215,16 @@
     const pad = document.createElement("div");
     pad.id = "global-mini-controls";
     pad.className =
-      "hidden pointer-events-none absolute inset-x-2 bottom-2 z-20 flex items-end justify-between gap-2 touch-none select-none";
+      "hidden pointer-events-none absolute inset-x-0 bottom-0 z-25 flex items-end justify-between px-3 py-2 touch-none select-none";
     pad.innerHTML = `
-      <div class="pointer-events-auto flex items-center gap-1.5">
-        <button type="button" data-gpad="left" aria-label="Links" class="w-10 h-10 rounded-xl border border-cyan-300/35 bg-slate-950/80 text-cyan-200 font-bold text-sm active:scale-95 active:bg-cyan-500/30 touch-none select-none">◀</button>
-        <button type="button" data-gpad="right" aria-label="Rechts" class="w-10 h-10 rounded-xl border border-cyan-300/35 bg-slate-950/80 text-cyan-200 font-bold text-sm active:scale-95 active:bg-cyan-500/30 touch-none select-none">▶</button>
-        <button type="button" data-gpad="up" aria-label="Hoch" class="w-10 h-10 rounded-xl border border-sky-300/35 bg-slate-950/80 text-sky-200 font-bold text-sm active:scale-95 active:bg-sky-500/30 touch-none select-none">▲</button>
-        <button type="button" data-gpad="down" aria-label="Runter" class="w-10 h-10 rounded-xl border border-sky-300/35 bg-slate-950/80 text-sky-200 font-bold text-sm active:scale-95 active:bg-sky-500/30 touch-none select-none">▼</button>
+      <div class="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
+        <button type="button" data-gpad="left" aria-label="Links" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-cyan-400/40 bg-slate-900/85 text-cyan-200 font-bold text-base shadow-lg shadow-cyan-950/40 active:scale-95 active:bg-cyan-500/30 touch-none select-none">◀</button>
+        <button type="button" data-gpad="right" aria-label="Rechts" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-cyan-400/40 bg-slate-900/85 text-cyan-200 font-bold text-base shadow-lg shadow-cyan-950/40 active:scale-95 active:bg-cyan-500/30 touch-none select-none">▶</button>
+        <button type="button" data-gpad="up" aria-label="Hoch" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-emerald-400/40 bg-slate-900/85 text-emerald-200 font-bold text-base shadow-lg shadow-emerald-950/40 active:scale-95 active:bg-emerald-500/30 touch-none select-none">▲</button>
+        <button type="button" data-gpad="down" aria-label="Runter" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl border border-amber-400/40 bg-slate-900/85 text-amber-200 font-bold text-base shadow-lg shadow-amber-950/40 active:scale-95 active:bg-amber-500/30 touch-none select-none">▼</button>
       </div>
       <div class="pointer-events-auto flex items-center">
-        <button type="button" data-gpad="jump" aria-label="Springen" class="px-3 h-10 rounded-xl border border-cyan-300/50 bg-cyan-400/90 text-slate-950 font-orbitron text-[10px] font-black uppercase tracking-wider shadow-lg active:scale-95 touch-none select-none">Springen</button>
+        <button type="button" data-gpad="jump" aria-label="Springen" class="px-4 h-11 sm:h-12 rounded-xl border border-cyan-300/60 bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-orbitron text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg shadow-cyan-500/30 active:scale-95 touch-none select-none">Springen</button>
       </div>
     `;
 
@@ -241,6 +241,11 @@
       const press = (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
+        if (typeof btn.setPointerCapture === "function") {
+          try {
+            btn.setPointerCapture(ev.pointerId);
+          } catch (_) {}
+        }
         if (!activeGameId || isPaused || controlMode !== "buttons") return;
         sound.ensureContext();
 
@@ -263,6 +268,11 @@
       const release = (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
+        if (typeof btn.releasePointerCapture === "function") {
+          try {
+            btn.releasePointerCapture(ev.pointerId);
+          } catch (_) {}
+        }
         if (action === "jump") {
           if (heldControls.jump) {
             heldControls.jump = false;
@@ -282,7 +292,7 @@
       btn.addEventListener("pointerdown", press);
       btn.addEventListener("pointerup", release);
       btn.addEventListener("pointercancel", release);
-      btn.addEventListener("pointerleave", release);
+      btn.addEventListener("contextmenu", (ev) => ev.preventDefault());
     });
 
     dom.stage.appendChild(pad);
@@ -480,7 +490,7 @@
       if (activeGameId && isPaused && dom.pauseOverlay.classList.contains("hidden")) {
         resumeActiveGame();
       }
-    }, 350);
+    }, 160);
   }
 
   function exitToHub() {
