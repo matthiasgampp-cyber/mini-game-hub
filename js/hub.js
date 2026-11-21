@@ -689,4 +689,70 @@
   updateSoundButton();
   syncControlUI();
   renderGameCards();
+
+  // =========================================================
+  // Automatischer Update- & Cache-Buster-Mechanismus für Handys
+  // =========================================================
+  const APP_VERSION = window.APP_VERSION || "2.2.0";
+
+  // Bereinige etwaige alte / verwaiste Service Worker & Cache-Storage auf Mobilgeräten
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        registration.unregister().catch(() => {});
+      }
+    }).catch(() => {});
+  }
+  if (window.caches) {
+    caches.keys().then((keys) => {
+      keys.forEach((key) => caches.delete(key));
+    }).catch(() => {});
+  }
+
+  let isCheckingUpdate = false;
+  async function checkForAppUpdates() {
+    if (isCheckingUpdate) return;
+    isCheckingUpdate = true;
+    try {
+      const res = await fetch(`./version.json?_t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache, no-store, must-revalidate" }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.version && data.version !== APP_VERSION) {
+        console.log(`[App Update] Neue Version verfügbar: ${data.version} (aktuell: ${APP_VERSION}). Aktualisiere...`);
+        if (window.caches) {
+          try {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((k) => caches.delete(k)));
+          } catch (_) {}
+        }
+        const nextUrl = new URL(window.location.href);
+        nextUrl.searchParams.set("_v", Date.now());
+        window.location.replace(nextUrl.toString());
+      }
+    } catch (_) {
+      // Offline oder Netzwerk-Fehler ignorieren
+    } finally {
+      isCheckingUpdate = false;
+    }
+  }
+
+  // Update-Prüfung beim Start
+  checkForAppUpdates();
+
+  // Update-Prüfung, wenn der Tab wieder in den Vordergrund kommt (z. B. Handy entsperrt / App gewechselt)
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      checkForAppUpdates();
+    }
+  });
+
+  // Auf iOS Safari: Wenn Seite aus dem bfcache wiederhergestellt wird
+  window.addEventListener("pageshow", (e) => {
+    if (e.persisted) {
+      checkForAppUpdates();
+    }
+  });
 })();

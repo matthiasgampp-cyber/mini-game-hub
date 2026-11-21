@@ -68,7 +68,12 @@
     }
 
     const src = urls[index];
-    const existing = Array.from(document.scripts).find((s) => s.getAttribute("src") === src);
+    const v = window.APP_VERSION || "2.2.0";
+    const versionedSrc = `${src}?v=${v}`;
+    const existing = Array.from(document.scripts).find((s) => {
+      const sSrc = s.getAttribute("src") || "";
+      return sSrc === src || sSrc.startsWith(`${src}?`);
+    });
     if (existing) {
       if (existing.dataset.loaded === "true") {
         loadScriptsSequential(urls, index + 1);
@@ -80,7 +85,7 @@
     }
 
     const script = document.createElement("script");
-    script.src = src;
+    script.src = versionedSrc;
     script.async = false;
     script.addEventListener(
       "load",

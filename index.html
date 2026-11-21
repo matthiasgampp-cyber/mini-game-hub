@@ -11,8 +11,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Neon Multi Mini Game Hub</title>
 
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./css/hub.css" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <link rel="manifest" href="./manifest.json?v=2.2.0" />
+  <link rel="stylesheet" href="./css/hub.css?v=2.2.0" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -138,21 +142,22 @@
     </section>
   </div>
 
-  <!-- Module in fester Reihenfolge laden -->
-  <script src="./js/hub.js"></script>
-  <script src="./games/_template.js"></script>
-  <script src="./games/pong.js"></script>
-  <script src="./games/snake.js"></script>
-  <script src="./games/airhockey.js"></script>
-  <script src="./games/brickbreaker.js"></script>
-  <script src="./games/spaceinvaders.js"></script>
-  <script src="./games/spacetaxi.js"></script>
-  <script src="./games/Pandapitfall/index.js"></script>
-  <script src="./games/pandapitfall.js"></script>
-  <script src="games/yetiadventure.js"></script>
-  <script src="./games/pandiesabenteuer.js"></script>
-  <script src="./games/Pandiesabenteuer/index.js"></script>
-  <script src="./js/virtual-joystick.js"></script>
-  <script src="./js/global-controls-fix.js"></script>
+  <!-- Module in fester Reihenfolge laden (mit Cache-Busting Version) -->
+  <script>window.APP_VERSION = "2.2.0";</script>
+  <script src="./js/hub.js?v=2.2.0"></script>
+  <script src="./games/_template.js?v=2.2.0"></script>
+  <script src="./games/pong.js?v=2.2.0"></script>
+  <script src="./games/snake.js?v=2.2.0"></script>
+  <script src="./games/airhockey.js?v=2.2.0"></script>
+  <script src="./games/brickbreaker.js?v=2.2.0"></script>
+  <script src="./games/spaceinvaders.js?v=2.2.0"></script>
+  <script src="./games/spacetaxi.js?v=2.2.0"></script>
+  <script src="./games/Pandapitfall/index.js?v=2.2.0"></script>
+  <script src="./games/pandapitfall.js?v=2.2.0"></script>
+  <script src="games/yetiadventure.js?v=2.2.0"></script>
+  <script src="./games/pandiesabenteuer.js?v=2.2.0"></script>
+  <script src="./games/Pandiesabenteuer/index.js?v=2.2.0"></script>
+  <script src="./js/virtual-joystick.js?v=2.2.0"></script>
+  <script src="./js/global-controls-fix.js?v=2.2.0"></script>
 </body>
 </html>

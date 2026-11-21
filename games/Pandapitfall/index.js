@@ -10,13 +10,15 @@
   ];
 
   function loadScript(src) {
+    const v = window.APP_VERSION || "2.2.0";
+    const versionedSrc = `${src}?v=${v}`;
     return new Promise((resolve, reject) => {
-      if (document.querySelector(`script[src="${src}"]`)) {
+      if (document.querySelector(`script[src*="${src}"]`)) {
         resolve();
         return;
       }
       const script = document.createElement("script");
-      script.src = src;
+      script.src = versionedSrc;
       script.async = false;
       script.onload = () => resolve();
       script.onerror = () => reject(new Error(`Konnte Skript nicht laden: ${src}`));
