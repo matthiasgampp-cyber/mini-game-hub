@@ -106,13 +106,16 @@
   };
 
   let controlMode = storage.get("control_mode", "buttons"); // "buttons" | "touch"
-  const heldControls = { left: false, right: false, up: false, down: false };
+  const heldControls = { left: false, right: false, up: false, down: false, jump: false };
   const jumpListeners = new Set();
 
   const games = new Map();
   let activeGameId = null;
   let isPaused = false;
   let globalPadEl = null;
+  let lastInnerW = window.innerWidth;
+  let lastInnerH = window.innerHeight;
+  let rotatePauseTimer = null;
 
   const dom = {
     hubView: document.getElementById("hub-view"),
@@ -159,6 +162,10 @@
       heldControls.down = false;
       dispatchKey("keyup", "ArrowDown", "ArrowDown");
     }
+    if (heldControls.jump) {
+      heldControls.jump = false;
+      dispatchKey("keyup", " ", "Space");
+    }
   }
 
   function triggerGlobalJump() {
@@ -196,7 +203,14 @@
   }
 
   function ensureGlobalPad() {
-    if (globalPadEl || !dom.stage) return;
+    if (globalPadEl && globalPadEl.isConnected) return;
+    if (!dom.stage) return;
+
+    const existing = document.getElementById("global-mini-controls");
+    if (existing) {
+      globalPadEl = existing;
+      return;
+    }
 
     const pad = document.createElement("div");
     pad.id = "global-mini-controls";
@@ -231,7 +245,10 @@
         sound.ensureContext();
 
         if (action === "jump") {
-          triggerGlobalJump();
+          if (!heldControls.jump) {
+            heldControls.jump = true;
+            triggerGlobalJump();
+          }
           return;
         }
 
@@ -246,6 +263,14 @@
       const release = (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
+        if (action === "jump") {
+          if (heldControls.jump) {
+            heldControls.jump = false;
+            dispatchKey("keyup", " ", "Space");
+          }
+          return;
+        }
+
         const spec = dirMap[action];
         if (!spec) return;
         if (heldControls[action]) {
@@ -263,6 +288,16 @@
     dom.stage.appendChild(pad);
     globalPadEl = pad;
   }
+
+  window.GLOBAL_MOBILE_CONTROLS = {
+    get mode() {
+      return controlMode;
+    },
+    held: heldControls,
+    setMode: setControlMode,
+    triggerJump: triggerGlobalJump,
+    releaseAll: releaseAllHeldControls
+  };
 
   function updateSoundButton() {
     if (!dom.soundBtn) return;
@@ -346,6 +381,10 @@
   }
 
   function destroyActiveGame() {
+    if (rotatePauseTimer) {
+      clearTimeout(rotatePauseTimer);
+      rotatePauseTimer = null;
+    }
     releaseAllHeldControls();
     jumpListeners.clear();
     if (!activeGameId) return;
@@ -384,6 +423,7 @@
     dom.headerTitle.textContent = game.name.toUpperCase();
     dom.headerSubtitle.textContent = game.subtitle || game.tag || "Minispiel";
 
+    ensureGlobalPad();
     const ctx = createHubContext(gameId);
 
     if (typeof game.init === "function") {
@@ -400,14 +440,16 @@
     }
   }
 
-  function pauseActiveGame() {
+  function pauseActiveGame({ showOverlay = true } = {}) {
     if (!activeGameId || isPaused) return;
     const game = games.get(activeGameId);
     isPaused = true;
     releaseAllHeldControls();
     syncControlUI();
     dom.pauseBtn.textContent = "Weiter";
-    dom.pauseOverlay.classList.remove("hidden");
+    if (showOverlay) {
+      dom.pauseOverlay.classList.remove("hidden");
+    }
     if (game && typeof game.pause === "function") {
       game.pause();
     }
@@ -423,6 +465,22 @@
     if (game && typeof game.resume === "function") {
       game.resume();
     }
+  }
+
+  function triggerRotatePause() {
+    if (!activeGameId || isPaused) return;
+    pauseActiveGame({ showOverlay: false });
+    if (rotatePauseTimer) clearTimeout(rotatePauseTimer);
+    rotatePauseTimer = setTimeout(() => {
+      rotatePauseTimer = null;
+      const game = games.get(activeGameId);
+      if (game && typeof game.resize === "function") {
+        game.resize();
+      }
+      if (activeGameId && isPaused && dom.pauseOverlay.classList.contains("hidden")) {
+        resumeActiveGame();
+      }
+    }, 350);
   }
 
   function exitToHub() {
@@ -457,7 +515,26 @@
     }
   };
 
+  window.addEventListener("orientationchange", () => {
+    lastInnerW = window.innerWidth;
+    lastInnerH = window.innerHeight;
+    triggerRotatePause();
+  });
+
   window.addEventListener("resize", () => {
+    const curW = window.innerWidth;
+    const curH = window.innerHeight;
+    const flippedRatio =
+      (lastInnerW > lastInnerH && curH > curW) ||
+      (lastInnerH > lastInnerW && curW > curH);
+    lastInnerW = curW;
+    lastInnerH = curH;
+
+    if (flippedRatio) {
+      triggerRotatePause();
+      return;
+    }
+
     if (!activeGameId) return;
     const game = games.get(activeGameId);
     if (game && typeof game.resize === "function") {
@@ -467,7 +544,7 @@
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && activeGameId && !isPaused) {
-      pauseActiveGame();
+      pauseActiveGame({ showOverlay: true });
     }
   });
 
@@ -479,7 +556,7 @@
   dom.exitToHubBtn?.addEventListener("click", exitToHub);
   dom.pauseBtn?.addEventListener("click", () => {
     if (isPaused) resumeActiveGame();
-    else pauseActiveGame();
+    else pauseActiveGame({ showOverlay: true });
   });
   dom.resumeBtn?.addEventListener("click", resumeActiveGame);
   dom.restartFromPauseBtn?.addEventListener("click", () => {

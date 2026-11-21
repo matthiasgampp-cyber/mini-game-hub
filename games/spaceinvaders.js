@@ -299,7 +299,7 @@
 
     spawnRaidersAfterBoss() {
       const w = this.field.w || 360;
-      const count = 2 + this.bossDefeatedCount; // Nach 1. Boss = 3, nach 2. Boss = 4, usw.
+      const count = 2 + this.bossDefeatedCount;
       this.raiders = [];
       this.raiderFireTimer = 0.85;
 
@@ -656,13 +656,14 @@
 
       if (this.phase !== "playing" || this.paused) return;
 
+      const gHeld = window.GLOBAL_MOBILE_CONTROLS?.held || this.ctx?.controls?.held || {};
       const w = this.field.w || 360;
       const h = this.field.h || 500;
       const p = this.player;
 
       let moveDir = 0;
-      if (this.keys.left) moveDir -= 1;
-      if (this.keys.right) moveDir += 1;
+      if (this.keys.left || gHeld.left) moveDir -= 1;
+      if (this.keys.right || gHeld.right) moveDir += 1;
 
       if (moveDir !== 0) {
         p.x += moveDir * 280 * dt;
@@ -674,7 +675,7 @@
 
       p.fireCooldown = Math.max(0, p.fireCooldown - dt);
       const spec = WEAPON_SPECS[this.currentWeapon] || WEAPON_SPECS.laser;
-      const shouldFire = this.isTouchDevice || this.keys.fire;
+      const shouldFire = this.isTouchDevice || this.keys.fire || Boolean(gHeld.jump || gHeld.up);
       if (shouldFire && p.fireCooldown <= 0) {
         this.firePlayerWeapon();
         p.fireCooldown = spec.cooldown;
@@ -1050,7 +1051,6 @@
         ctx.save();
         ctx.translate(r.x, r.y);
 
-        // Schneller Angriffsflieger mit nach unten gerichteter Nase
         ctx.fillStyle = "#fb923c";
         ctx.strokeStyle = "#fed7aa";
         ctx.lineWidth = 1.3;
@@ -1065,7 +1065,6 @@
         ctx.fill();
         ctx.stroke();
 
-        // Cockpit / Kern
         ctx.fillStyle = "#fef08a";
         ctx.beginPath();
         ctx.arc(0, 0, 3, 0, Math.PI * 2);
@@ -1425,6 +1424,11 @@
 
     pause() {
       this.paused = true;
+      this.keys.left = false;
+      this.keys.right = false;
+      this.keys.fire = false;
+      this.pointerActive = false;
+      this.pointerTargetX = null;
     },
 
     resume() {

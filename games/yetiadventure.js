@@ -3,7 +3,7 @@
 
   const METERS_PER_PX = 1 / 18;
   const STAGE_SPAN_METERS = 500;
- const STAGE_ORDER = ["ice_river", "sled_run", "snowball_run", "ice_cave", "ice_boss"];
+  const STAGE_ORDER = ["ice_river", "sled_run", "snowball_run", "ice_cave", "ice_boss"];
   const LEVEL_CHOICES = [
     { id: "ice_river", label: "🧊 Eisfluss" },
     { id: "sled_run", label: "🛷 Schlitten" },
@@ -118,6 +118,7 @@
         runCycle: 0
       };
 
+      this.localInput = { left: false, right: false, up: false, down: false, crouch: false };
       this.input = { left: false, right: false, up: false, down: false, crouch: false };
 
       this.floes = [];
@@ -134,10 +135,12 @@
       this.treasureSpawnTimer = 1.25;
 
       this.root = document.createElement("div");
-      this.root.className = "relative w-full h-full flex flex-col items-center justify-between p-1.5 bg-[#04101a] overflow-hidden select-none";
+      this.root.className =
+        "relative w-full h-full flex flex-col items-center justify-between p-1.5 bg-[#04101a] overflow-hidden select-none";
 
       this.hud = document.createElement("div");
-      this.hud.className = "w-full max-w-[920px] min-h-[28px] shrink-0 flex items-center justify-between gap-2 px-2 font-orbitron text-[10px] sm:text-[11px] overflow-x-auto no-scrollbar";
+      this.hud.className =
+        "w-full max-w-[920px] min-h-[28px] shrink-0 flex items-center justify-between gap-2 px-2 font-orbitron text-[10px] sm:text-[11px] overflow-x-auto no-scrollbar";
 
       this.hudStats = document.createElement("div");
       this.hudStats.className = "flex items-center gap-2.5 shrink-0 whitespace-nowrap";
@@ -151,7 +154,8 @@
         btn.type = "button";
         btn.textContent = item.label;
         btn.dataset.level = item.id;
-        btn.className = "px-2 py-0.5 rounded-lg border font-orbitron text-[10px] whitespace-nowrap transition cursor-pointer";
+        btn.className =
+          "px-2 py-0.5 rounded-lg border font-orbitron text-[10px] whitespace-nowrap transition cursor-pointer";
         btn.addEventListener("click", () => {
           this.selectStartLevel(item.id);
         });
@@ -163,16 +167,19 @@
       this.hud.appendChild(this.levelBar);
 
       this.canvasWrapper = document.createElement("div");
-      this.canvasWrapper.className = "relative flex-1 w-full max-w-[920px] flex items-center justify-center min-h-0 overflow-hidden";
+      this.canvasWrapper.className =
+        "relative flex-1 w-full max-w-[920px] flex items-center justify-center min-h-0 overflow-hidden";
 
       this.canvas = document.createElement("canvas");
-      this.canvas.className = "block rounded-2xl border border-cyan-300/35 bg-[#071c2c] shadow-[0_0_30px_rgba(34,211,238,0.16)] touch-none";
+      this.canvas.className =
+        "block rounded-2xl border border-cyan-300/35 bg-[#071c2c] shadow-[0_0_30px_rgba(34,211,238,0.16)] touch-none";
       this.canvasCtx = this.canvas.getContext("2d");
 
       this.touchPad = document.createElement("div");
-      this.touchPad.className = "pointer-events-none absolute inset-x-2 bottom-2 z-10 flex items-end justify-between gap-2 sm:hidden";
+      this.touchPad.className =
+        "pointer-events-none absolute inset-x-2 bottom-2 z-10 flex items-end justify-between gap-2 sm:hidden";
       this.touchPad.innerHTML = `
-        <div class="pointer-events-auto flex items-center gap-2">
+        <div class="pointer-events-auto flex items-center gap-4">
           <button type="button" data-pad="left" class="w-12 h-12 rounded-2xl border border-cyan-300/35 bg-slate-950/75 text-cyan-200 font-bold text-lg active:scale-95 active:bg-cyan-500/30">◀</button>
           <button type="button" data-pad="right" class="w-12 h-12 rounded-2xl border border-cyan-300/35 bg-slate-950/75 text-cyan-200 font-bold text-lg active:scale-95 active:bg-cyan-500/30">▶</button>
           <button type="button" data-pad="crouch" class="px-3 h-12 rounded-2xl border border-sky-300/40 bg-sky-950/75 text-sky-200 font-orbitron text-[10px] font-bold uppercase active:scale-95 active:bg-sky-500/30">Ducken</button>
@@ -183,7 +190,8 @@
       `;
 
       this.overlay = document.createElement("div");
-      this.overlay.className = "hidden absolute inset-0 z-20 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4";
+      this.overlay.className =
+        "hidden absolute inset-0 z-20 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4";
 
       this.canvasWrapper.appendChild(this.canvas);
       this.canvasWrapper.appendChild(this.touchPad);
@@ -193,9 +201,34 @@
       ctx.stage.appendChild(this.root);
 
       this.bindEvents();
+      this.syncGlobalPadVisibility();
       await this.ensureLevelLoaded(this.startMode);
       this.resize(true);
       await this.resetState();
+    },
+
+    syncGlobalPadVisibility() {
+      if (!this.touchPad) return;
+      const hasGlobalPad = Boolean(
+        document.getElementById("global-touch-controls") || window.GLOBAL_MOBILE_CONTROLS
+      );
+      this.touchPad.classList.toggle("hidden", hasGlobalPad);
+    },
+
+    syncInputs() {
+      this.syncGlobalPadVisibility();
+      const gHeld = window.GLOBAL_MOBILE_CONTROLS?.held || this.ctx?.controls?.held || {};
+
+      this.input.left = Boolean(this.localInput.left || gHeld.left);
+      this.input.right = Boolean(this.localInput.right || gHeld.right);
+      this.input.up = Boolean(this.localInput.up || gHeld.up);
+      this.input.down = Boolean(this.localInput.down || gHeld.down);
+      this.input.crouch = Boolean(this.localInput.crouch || gHeld.down || gHeld.crouch);
+
+      if (gHeld.up && !this._prevGlobalUp) {
+        this.triggerJump();
+      }
+      this._prevGlobalUp = Boolean(gHeld.up);
     },
 
     async ensureLevelLoaded(id) {
@@ -255,34 +288,46 @@
         this.resizeObserver.observe(this.canvasWrapper);
       }
 
+      if (this.ctx?.controls?.onJump) {
+        this._unsubCtxJump = this.ctx.controls.onJump(() => {
+          if (this.phase === "playing" && !this.paused) this.triggerJump();
+        });
+      }
+
+      if (window.GLOBAL_MOBILE_CONTROLS?.onJump) {
+        this._unsubGlobalJump = window.GLOBAL_MOBILE_CONTROLS.onJump(() => {
+          if (this.phase === "playing" && !this.paused) this.triggerJump();
+        });
+      }
+
       this.onKeyDown = (e) => {
         if (this.phase !== "playing" || this.paused) return;
         const k = e.key.toLowerCase();
         if (k === "arrowleft" || k === "a") {
           e.preventDefault();
-          this.input.left = true;
+          this.localInput.left = true;
         } else if (k === "arrowright" || k === "d") {
           e.preventDefault();
-          this.input.right = true;
+          this.localInput.right = true;
         } else if (k === " " || k === "arrowup" || k === "w") {
           e.preventDefault();
-          this.input.up = true;
+          this.localInput.up = true;
           this.triggerJump();
         } else if (k === "arrowdown" || k === "s" || k === "c" || k === "shift") {
           e.preventDefault();
-          this.input.down = true;
-          this.input.crouch = true;
+          this.localInput.down = true;
+          this.localInput.crouch = true;
         }
       };
 
       this.onKeyUp = (e) => {
         const k = e.key.toLowerCase();
-        if (k === "arrowleft" || k === "a") this.input.left = false;
-        else if (k === "arrowright" || k === "d") this.input.right = false;
-        else if (k === " " || k === "arrowup" || k === "w") this.input.up = false;
+        if (k === "arrowleft" || k === "a") this.localInput.left = false;
+        else if (k === "arrowright" || k === "d") this.localInput.right = false;
+        else if (k === " " || k === "arrowup" || k === "w") this.localInput.up = false;
         else if (k === "arrowdown" || k === "s" || k === "c" || k === "shift") {
-          this.input.down = false;
-          this.input.crouch = false;
+          this.localInput.down = false;
+          this.localInput.crouch = false;
         }
       };
 
@@ -296,17 +341,17 @@
           ev.preventDefault();
           ev.stopPropagation();
           if (this.phase !== "playing" || this.paused) return;
-          if (action === "left") this.input.left = true;
-          else if (action === "right") this.input.right = true;
-          else if (action === "crouch") this.input.crouch = true;
+          if (action === "left") this.localInput.left = true;
+          else if (action === "right") this.localInput.right = true;
+          else if (action === "crouch") this.localInput.crouch = true;
           else if (action === "jump") this.triggerJump();
         };
         const upFn = (ev) => {
           ev.preventDefault();
           ev.stopPropagation();
-          if (action === "left") this.input.left = false;
-          else if (action === "right") this.input.right = false;
-          else if (action === "crouch") this.input.crouch = false;
+          if (action === "left") this.localInput.left = false;
+          else if (action === "right") this.localInput.right = false;
+          else if (action === "crouch") this.localInput.crouch = false;
         };
         btn.addEventListener("pointerdown", downFn);
         btn.addEventListener("pointerup", upFn);
@@ -325,7 +370,7 @@
         const dy = e.clientY - this.swipeStart.y;
         const dx = e.clientX - this.swipeStart.x;
         if (dy > 26 && Math.abs(dy) > Math.abs(dx)) {
-          this.input.crouch = true;
+          this.localInput.crouch = true;
         }
       };
       this.onCanvasPointerUp = (e) => {
@@ -335,7 +380,7 @@
         if ((dy < -24 && Math.abs(dy) > Math.abs(dx)) || (Math.abs(dx) < 16 && Math.abs(dy) < 16)) {
           this.triggerJump();
         }
-        this.input.crouch = false;
+        this.localInput.crouch = false;
         this.swipeStart = null;
       };
 
@@ -591,6 +636,7 @@
 
     update(dt) {
       this.animClock += dt;
+      this.syncInputs();
 
       for (let i = this.particles.length - 1; i >= 0; i--) {
         const pt = this.particles[i];
@@ -958,6 +1004,8 @@
 
     pause() {
       this.paused = true;
+      this.localInput = { left: false, right: false, up: false, down: false, crouch: false };
+      this.input = { left: false, right: false, up: false, down: false, crouch: false };
     },
 
     resume() {
@@ -971,6 +1019,8 @@
       if (this.rafId) cancelAnimationFrame(this.rafId);
       if (this.onWindowResize) window.removeEventListener("resize", this.onWindowResize);
       if (this.resizeObserver) this.resizeObserver.disconnect();
+      if (this._unsubCtxJump) this._unsubCtxJump();
+      if (this._unsubGlobalJump) this._unsubGlobalJump();
       window.removeEventListener("keydown", this.onKeyDown);
       window.removeEventListener("keyup", this.onKeyUp);
       if (Array.isArray(this.padHandlers)) {

@@ -71,6 +71,7 @@
       };
 
       this.input = { left: false, right: false, up: false, down: false, crouch: false };
+      this._prevJumpHeld = false;
 
       this.platforms = [];
       this.obstacles = [];
@@ -89,7 +90,6 @@
       this.root = document.createElement("div");
       this.root.className = "relative w-full h-full flex flex-col items-center justify-between p-1.5 bg-[#040f09] overflow-hidden select-none";
 
-      // Kompakte, einzeilige HUD-Leiste, damit kein Umbruch die Canvas-Höhe verschiebt
       this.hud = document.createElement("div");
       this.hud.className = "w-full max-w-[920px] min-h-[28px] shrink-0 flex items-center justify-between gap-2 px-2 font-orbitron text-[10px] sm:text-[11px] overflow-x-auto no-scrollbar";
 
@@ -126,13 +126,12 @@
       this.touchPad = document.createElement("div");
       this.touchPad.className = "pointer-events-none absolute inset-x-2 bottom-2 z-10 flex items-end justify-between gap-2 sm:hidden";
       this.touchPad.innerHTML = `
-        <div class="pointer-events-auto flex items-center gap-2">
+        <div class="pointer-events-auto flex items-center gap-4">
           <button type="button" data-pad="left" class="w-12 h-12 rounded-2xl border border-emerald-300/35 bg-slate-950/75 text-emerald-200 font-bold text-lg active:scale-95 active:bg-emerald-500/30">◀</button>
           <button type="button" data-pad="right" class="w-12 h-12 rounded-2xl border border-emerald-300/35 bg-slate-950/75 text-emerald-200 font-bold text-lg active:scale-95 active:bg-emerald-500/30">▶</button>
           <button type="button" data-pad="crouch" class="px-3 h-12 rounded-2xl border border-amber-300/40 bg-amber-950/75 text-amber-200 font-orbitron text-[10px] font-bold uppercase active:scale-95 active:bg-amber-500/30">Ducken</button>
         </div>
         <div class="pointer-events-auto flex items-center gap-2">
-          <button type="button" data-pad="up" class="w-11 h-12 rounded-2xl border border-lime-300/35 bg-slate-950/75 text-lime-200 font-bold text-sm active:scale-95 active:bg-lime-500/30">▲</button>
           <button type="button" data-pad="down" class="w-11 h-12 rounded-2xl border border-lime-300/35 bg-slate-950/75 text-lime-200 font-bold text-sm active:scale-95 active:bg-lime-500/30">▼</button>
           <button type="button" data-pad="jump" class="px-4 h-12 rounded-2xl border border-emerald-300/50 bg-emerald-400 text-slate-950 font-orbitron text-[11px] font-black uppercase tracking-wider shadow-lg active:scale-95">Springen</button>
         </div>
@@ -149,8 +148,39 @@
       ctx.stage.appendChild(this.root);
 
       this.bindEvents();
+      this.syncGlobalPadVisibility();
       this.resize(true);
       this.resetState();
+    },
+
+    syncGlobalPadVisibility() {
+      if (!this.touchPad) return;
+      const hasGlobalPad = Boolean(
+        document.getElementById("global-mini-controls") || window.GLOBAL_MOBILE_CONTROLS
+      );
+      this.touchPad.classList.toggle("hidden", hasGlobalPad);
+    },
+
+    syncGlobalInputs() {
+      this.syncGlobalPadVisibility();
+      const gHeld = window.GLOBAL_MOBILE_CONTROLS?.held || this.ctx?.controls?.held;
+      if (!gHeld) return;
+
+      this.input.left = Boolean(this.input.left || gHeld.left);
+      this.input.right = Boolean(this.input.right || gHeld.right);
+      this.input.down = Boolean(this.input.down || gHeld.down || gHeld.crouch);
+      this.input.crouch = Boolean(this.input.crouch || gHeld.down || gHeld.crouch);
+
+      if (gHeld.up || gHeld.jump) {
+        if (this.mode === "balloon") {
+          this.panda.vy = -225;
+        } else if (gHeld.jump && !this._prevJumpHeld) {
+          this.triggerJumpOrSwing();
+        } else if (gHeld.up && (this.mode === "jungle" || this.mode === "tree")) {
+          this.tryClimbOnly();
+        }
+      }
+      this._prevJumpHeld = Boolean(gHeld.jump);
     },
 
     getCurrentLevel() {
@@ -266,11 +296,7 @@
           if (this.phase !== "playing" || this.paused) return;
           if (action === "left") this.input.left = true;
           else if (action === "right") this.input.right = true;
-          else if (action === "up") {
-            this.input.up = true;
-            if (this.mode === "jungle" || this.mode === "tree") this.tryClimbOnly();
-            else this.panda.vy = -205;
-          } else if (action === "down") {
+          else if (action === "down") {
             this.input.down = true;
             this.input.crouch = true;
             if ((this.mode === "jungle" || this.mode === "tree") && this.panda.onPlatform && !this.panda.climbing) {
@@ -288,7 +314,6 @@
           ev.stopPropagation();
           if (action === "left") this.input.left = false;
           else if (action === "right") this.input.right = false;
-          else if (action === "up") this.input.up = false;
           else if (action === "down") {
             this.input.down = false;
             this.input.crouch = false;
@@ -592,7 +617,6 @@
 
     spawnTreasure(xPos = null, yPos = null, forceHigh = false) {
       const w = this.field.w;
-      const h = this.field.h;
       const groundY = this.field.groundY;
       const surfaceY = this.field.surfaceY;
       const kinds = [
@@ -701,6 +725,7 @@
 
     update(dt) {
       this.animClock += dt;
+      this.syncGlobalInputs();
 
       for (let i = this.particles.length - 1; i >= 0; i--) {
         const pt = this.particles[i];
@@ -860,7 +885,6 @@
         ctx.quadraticCurveTo(ctrlPt.x, ctrlPt.y, endPt.x, endPt.y);
         ctx.stroke();
 
-        // Ankerpunkt oben & kleines Ende unten, damit die begrenzte Länge klar sichtbar ist
         ctx.fillStyle = "#4d7c0f";
         ctx.beginPath();
         ctx.arc(v.x, v.topY, 4, 0, Math.PI * 2);
