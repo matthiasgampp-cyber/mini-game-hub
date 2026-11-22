@@ -678,61 +678,291 @@
     },
 
     drawEnding(ctx, t) {
-      // Außenwand rund um das warm beleuchtete Fenster
-      ctx.fillStyle = "#0f172a";
+      // 1. Nächtliche Außenwand (Holzverkleidung mit warmem Lichtschein ums Fenster)
+      const extBg = ctx.createLinearGradient(0, 0, 0, H);
+      extBg.addColorStop(0, "#070b1e");
+      extBg.addColorStop(0.65, "#0f172a");
+      extBg.addColorStop(1, "#020617");
+      ctx.fillStyle = extBg;
       ctx.fillRect(0, 0, W, H);
 
-      const fx = 160;
-      const fy = 54;
-      const fw = 400;
-      const fh = 224;
+      // Holzschalung an der Außenwand
+      ctx.strokeStyle = "rgba(30, 41, 59, 0.55)";
+      ctx.lineWidth = 1.2;
+      for (let y = 16; y < H; y += 22) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
 
-      // Warmes Esszimmer im Fenster
-      const rg = ctx.createRadialGradient(W / 2, fy + 90, 20, W / 2, fy + 110, 230);
-      rg.addColorStop(0, "#fef3c7");
-      rg.addColorStop(1, "#b45309");
-      ctx.fillStyle = rg;
+      const fx = 105;
+      const fy = 46;
+      const fw = 510;
+      const fh = 236;
+
+      // Warmes Fensterlicht auf der Außenwand
+      const outerGlow = ctx.createRadialGradient(W / 2, fy + fh * 0.5, 80, W / 2, fy + fh * 0.5, 360);
+      outerGlow.addColorStop(0, "rgba(251, 191, 36, 0.34)");
+      outerGlow.addColorStop(1, "rgba(251, 191, 36, 0)");
+      ctx.fillStyle = outerGlow;
+      ctx.fillRect(0, 0, W, H);
+
+      // 2. Innenraum durch das Fenster (geclippt)
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(fx, fy, fw, fh);
+      ctx.clip();
+
+      // Warmer Raum-Hintergrundverlauf
+      const roomG = ctx.createRadialGradient(W / 2, fy + 64, 15, W / 2, fy + 115, 310);
+      roomG.addColorStop(0, "#fef3c7");
+      roomG.addColorStop(0.5, "#d97706");
+      roomG.addColorStop(1, "#451a03");
+      ctx.fillStyle = roomG;
       ctx.fillRect(fx, fy, fw, fh);
 
-      // Blaui (links) & Papa (rechts) am Esstisch
-      const eatBob = Math.sin(t * 5) * 4;
-      window.BLAUI_DRAW?.(ctx, W / 2 - 84, fy + 178, {
+      // Holz-Wandvertäfelung unten
+      ctx.fillStyle = "rgba(69, 26, 3, 0.55)";
+      ctx.fillRect(fx, fy + 150, fw, fh - 150);
+      ctx.strokeStyle = "rgba(251, 191, 36, 0.16)";
+      ctx.lineWidth = 1;
+      for (let x = fx; x < fx + fw; x += 26) {
+        ctx.beginPath();
+        ctx.moveTo(x, fy + 150);
+        ctx.lineTo(x, fy + fh);
+        ctx.stroke();
+      }
+
+      // Hintergrund-Deko: Familienbild, Sideboard & Bücherregal
+      ctx.fillStyle = "#78350f";
+      ctx.fillRect(fx + 52, fy + 44, 56, 44);
+      ctx.fillStyle = "#fef3c7";
+      ctx.fillRect(fx + 57, fy + 49, 46, 34);
+      ctx.fillStyle = "#60a5fa";
+      ctx.beginPath();
+      ctx.arc(fx + 72, fy + 66, 7, 0, TAU);
+      ctx.arc(fx + 88, fy + 66, 7, 0, TAU);
+      ctx.arc(fx + 80, fy + 70, 5, 0, TAU);
+      ctx.fill();
+
+      // Sideboard rechts hinten mit Geschirr & Pflanze
+      ctx.fillStyle = "rgba(69, 26, 3, 0.72)";
+      ctx.fillRect(fx + fw - 115, fy + 122, 92, 40);
+      ctx.fillStyle = "#16a34a";
+      ctx.beginPath();
+      ctx.arc(fx + fw - 44, fy + 110, 12, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = "#b45309";
+      ctx.fillRect(fx + fw - 51, fy + 116, 14, 8);
+
+      // Hängelampe mit warmem Lichtkegel über dem Tisch
+      ctx.strokeStyle = "#451a03";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(W / 2, fy);
+      ctx.lineTo(W / 2, fy + 24);
+      ctx.stroke();
+
+      const cone = ctx.createLinearGradient(0, fy + 28, 0, fy + fh);
+      cone.addColorStop(0, "rgba(254, 240, 138, 0.36)");
+      cone.addColorStop(1, "rgba(254, 240, 138, 0.02)");
+      ctx.fillStyle = cone;
+      ctx.beginPath();
+      ctx.moveTo(W / 2 - 24, fy + 34);
+      ctx.lineTo(W / 2 + 24, fy + 34);
+      ctx.lineTo(W / 2 + 190, fy + fh);
+      ctx.lineTo(W / 2 - 190, fy + fh);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#d97706";
+      ctx.beginPath();
+      ctx.moveTo(W / 2 - 26, fy + 36);
+      ctx.lineTo(W / 2 + 26, fy + 36);
+      ctx.quadraticCurveTo(W / 2 + 14, fy + 20, W / 2, fy + 20);
+      ctx.quadraticCurveTo(W / 2 - 14, fy + 20, W / 2 - 26, fy + 36);
+      ctx.fill();
+      ctx.fillStyle = "#fef9c3";
+      ctx.beginPath();
+      ctx.arc(W / 2, fy + 36, 7, 0, Math.PI);
+      ctx.fill();
+
+      // 3. Stühle & Familie (groß, deutlich sichtbar & richtig am Essen)
+      const ty = fy + 194;
+
+      // Holzstühle
+      [W / 2 - 148, W / 2 + 148].forEach((cx) => {
+        ctx.fillStyle = "#451a03";
+        ctx.fillRect(cx - 26, fy + 122, 52, 84);
+      });
+
+      const eatPapi = 0.5 - 0.5 * Math.cos(t * 2.5);
+      const eatBlaui = 0.5 - 0.5 * Math.cos(t * 2.5 + 2.1);
+      const eatMami = 0.5 - 0.5 * Math.cos(t * 2.5 + 4.2);
+
+      // Blaui in der Mitte
+      const blauiX = W / 2;
+      const blauiY = ty + 20;
+      window.BLAUI_DRAW?.(ctx, blauiX, blauiY, {
         facing: 1,
         t,
-        scale: 1.0,
-        pose: { armR: 1.8 + eatBob * 0.12, armL: 0.7 }
+        scale: 1.38,
+        pose: { armR: 1.0 + eatBlaui * 1.1, armL: 0.75, dy: -eatBlaui * 2 }
       });
 
-      // Papa (größerer Blaui-Papa mit Brille & Pullover)
-      window.BLAUI_DRAW?.(ctx, W / 2 + 86, fy + 186, {
+      // Papi links (groß, blauer Pullover & runde Brille)
+      const papiX = W / 2 - 144;
+      const papiY = ty + 24;
+      window.BLAUI_DRAW?.(ctx, papiX, papiY, {
+        facing: 1,
+        t,
+        scale: 1.56,
+        pose: { armR: 1.0 + eatPapi * 1.15, armL: 0.7, rot: eatPapi * 0.05 }
+      });
+      ctx.fillStyle = "#1d4ed8";
+      ctx.beginPath();
+      ctx.ellipse(papiX, papiY - 34, 22, 16, 0, 0, TAU);
+      ctx.fill();
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(papiX + 2, papiY - 64, 6.5, 0, TAU);
+      ctx.arc(papiX + 18, papiY - 64, 6.5, 0, TAU);
+      ctx.moveTo(papiX + 8.5, papiY - 64);
+      ctx.lineTo(papiX + 11.5, papiY - 64);
+      ctx.stroke();
+
+      // Mami rechts (rosa Strickjacke & Schleife)
+      const mamiX = W / 2 + 144;
+      const mamiY = ty + 22;
+      window.BLAUI_DRAW?.(ctx, mamiX, mamiY, {
         facing: -1,
         t,
-        scale: 1.24,
-        pose: { armR: 1.8 - eatBob * 0.12, armL: 0.7 }
+        scale: 1.48,
+        pose: { armR: 1.0 + eatMami * 1.15, armL: 0.7, rot: -eatMami * 0.05 }
       });
-      // Papas Brille
-      ctx.save();
-      ctx.strokeStyle = "#1e293b";
-      ctx.lineWidth = 1.6;
+      ctx.fillStyle = "#db2777";
       ctx.beginPath();
-      ctx.arc(W / 2 + 78, fy + 135, 5.5, 0, TAU);
-      ctx.arc(W / 2 + 94, fy + 135, 5.5, 0, TAU);
-      ctx.moveTo(W / 2 + 83.5, fy + 135);
-      ctx.lineTo(W / 2 + 88.5, fy + 135);
-      ctx.stroke();
-      ctx.restore();
+      ctx.ellipse(mamiX, mamiY - 32, 21, 15, 0, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = "#f472b6";
+      ctx.beginPath();
+      ctx.ellipse(mamiX - 7, mamiY - 82, 7, 4, -0.3, 0, TAU);
+      ctx.ellipse(mamiX + 7, mamiY - 82, 7, 4, 0.3, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = "#fde047";
+      ctx.beginPath();
+      ctx.arc(mamiX, mamiY - 82, 3, 0, TAU);
+      ctx.fill();
 
-      // Esstisch mit Mamas dampfendem Eintopf-Kessel
-      ctx.fillStyle = "#78350f";
-      ctx.fillRect(W / 2 - 110, fy + 166, 220, 12);
-      ctx.fillRect(W / 2 - 96, fy + 178, 12, 46);
-      ctx.fillRect(W / 2 + 84, fy + 178, 12, 46);
+      // 4. Realistischer Esstisch mit Tischläufer, Schüsseln, Ess-Animation, Brotkorb & Kerze
+      ctx.fillStyle = "#291002";
+      ctx.fillRect(W / 2 - 160, ty + 14, 16, 48);
+      ctx.fillRect(W / 2 + 144, ty + 14, 16, 48);
 
-      this.drawStewPot(ctx, W / 2, fy + 158, 1.35);
+      const tblG = ctx.createLinearGradient(0, ty - 14, 0, ty + 16);
+      tblG.addColorStop(0, "#b45309");
+      tblG.addColorStop(0.65, "#92400e");
+      tblG.addColorStop(1, "#451a03");
+      ctx.fillStyle = tblG;
+      ctx.beginPath();
+      ctx.moveTo(W / 2 - 176, ty);
+      ctx.lineTo(W / 2 - 152, ty - 14);
+      ctx.lineTo(W / 2 + 152, ty - 14);
+      ctx.lineTo(W / 2 + 176, ty);
+      ctx.lineTo(W / 2 + 176, ty + 14);
+      ctx.lineTo(W / 2 - 176, ty + 14);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#fef3c7";
+      ctx.beginPath();
+      ctx.moveTo(W / 2 - 44, ty);
+      ctx.lineTo(W / 2 - 36, ty - 14);
+      ctx.lineTo(W / 2 + 36, ty - 14);
+      ctx.lineTo(W / 2 + 44, ty);
+      ctx.closePath();
+      ctx.fill();
+
+      // Mamas dampfender Eintopf-Kessel in der Tischmitte
+      this.drawStewPot(ctx, W / 2, ty - 14, 1.35);
+
+      // 3 Suppenteller direkt vor Papi, Blaui und Mami
+      const bowls = [
+        { x: W / 2 - 86, y: ty - 4 },
+        { x: W / 2 - 38, y: ty - 2 },
+        { x: W / 2 + 86, y: ty - 4 }
+      ];
+      bowls.forEach((b) => {
+        ctx.fillStyle = "#ffffff";
+        ctx.strokeStyle = "#cbd5e1";
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.ellipse(b.x, b.y, 17, 6.5, 0, 0, TAU);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#f97316";
+        ctx.beginPath();
+        ctx.ellipse(b.x, b.y, 12.5, 4.2, 0, 0, TAU);
+        ctx.fill();
+      });
+
+      // Echte Ess-Animation: Löffel wandert aus dem Suppenteller mit Eintopf bis zum Mund!
+      const eaters = [
+        { bx: bowls[0].x, by: bowls[0].y, mx: papiX + 12, my: papiY - 46, p: eatPapi, dir: 1 },
+        { bx: bowls[1].x, by: bowls[1].y, mx: blauiX,     my: blauiY - 40, p: eatBlaui, dir: 1 },
+        { bx: bowls[2].x, by: bowls[2].y, mx: mamiX - 12, my: mamiY - 44, p: eatMami, dir: -1 }
+      ];
+      eaters.forEach((e) => {
+        const sx = e.bx + (e.mx - e.bx) * e.p;
+        const sy = e.by + (e.my - e.by) * e.p - Math.sin(e.p * Math.PI) * 12;
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(e.dir * (-0.5 + e.p * 0.9));
+        // Löffelstiel (zur Hand gerichtet)
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.moveTo(-e.dir * 16, 6);
+        ctx.lineTo(0, 0);
+        ctx.stroke();
+        // Löffelkopf
+        ctx.fillStyle = "#f8fafc";
+        ctx.beginPath();
+        ctx.ellipse(2 * e.dir, 0, 4.5, 2.8, 0, 0, TAU);
+        ctx.fill();
+        // Warmer orangefarbener Eintopf auf dem Löffel beim Hochheben
+        if (e.p > 0.15) {
+          ctx.fillStyle = "#f97316";
+          ctx.beginPath();
+          ctx.ellipse(2 * e.dir, -0.5, 3.2, 1.8, 0, 0, TAU);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+
+      // Kleine flackernde Kerze & Brotkorb
+      ctx.fillStyle = "#fef9c3";
+      ctx.fillRect(W / 2 - 58, ty - 20, 6, 14);
+      ctx.fillStyle = "#fde047";
+      ctx.beginPath();
+      ctx.arc(W / 2 - 55, ty - 23 + Math.sin(t * 10) * 0.7, 3, 0, TAU);
+      ctx.fill();
+
+      ctx.fillStyle = "#d97706";
+      ctx.beginPath();
+      ctx.ellipse(W / 2 + 58, ty - 6, 14, 7, 0, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = "#f59e0b";
+      ctx.beginPath();
+      ctx.arc(W / 2 + 54, ty - 10, 5, 0, TAU);
+      ctx.arc(W / 2 + 62, ty - 10, 5, 0, TAU);
+      ctx.fill();
 
       // Dampf & Herzchen
       this.steam.forEach((s) => {
-        ctx.fillStyle = `rgba(255, 255, 255, ${0.55 * (s.life / s.max)})`;
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.52 * (s.life / s.max)})`;
         ctx.beginPath();
         ctx.arc(s.x, s.y, 4, 0, TAU);
         ctx.fill();
@@ -747,25 +977,60 @@
         ctx.restore();
       });
 
-      // Fenster-Holzrahmen & Gardinen
+      // Geraffte Vorhänge innen am Fenster
+      [-1, 1].forEach((side) => {
+        const cx = side < 0 ? fx : fx + fw - 38;
+        ctx.fillStyle = "#9f1239";
+        ctx.beginPath();
+        ctx.moveTo(cx, fy);
+        ctx.lineTo(cx + 38, fy);
+        ctx.quadraticCurveTo(cx + (side < 0 ? 18 : 20), fy + fh * 0.5, cx + (side < 0 ? 28 : 10), fy + fh);
+        ctx.lineTo(cx + (side < 0 ? 0 : 38), fy + fh);
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      // Subtile Fensterscheiben-Spiegelung
+      ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.beginPath();
+      ctx.moveTo(fx + 40, fy);
+      ctx.lineTo(fx + 110, fy);
+      ctx.lineTo(fx + 50, fy + fh);
+      ctx.lineTo(fx - 20, fy + fh);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore(); // Ende Fenster-Clip
+
+      // 5. Realistischer 3D-Holzfensterrahmen & Fensterbank
       ctx.strokeStyle = "#451a03";
-      ctx.lineWidth = 10;
+      ctx.lineWidth = 12;
       ctx.strokeRect(fx, fy, fw, fh);
+      ctx.strokeStyle = "#78350f";
       ctx.lineWidth = 4;
+      ctx.strokeRect(fx - 4, fy - 4, fw + 8, fh + 8);
+      // Mittelkreuz
+      ctx.strokeStyle = "#451a03";
+      ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.moveTo(W / 2, fy);
       ctx.lineTo(W / 2, fy + fh);
+      ctx.moveTo(fx, fy + fh * 0.44);
+      ctx.lineTo(fx + fw, fy + fh * 0.44);
       ctx.stroke();
+      // Fensterbank außen
+      ctx.fillStyle = "#78350f";
+      ctx.fillRect(fx - 14, fy + fh + 2, fw + 28, 10);
 
-      // Abschlusstext & Buttons darunter
+      // 6. Abschlusstext & Buttons darunter
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#fde047";
-      ctx.font = "800 14px Orbitron, Rajdhani, sans-serif";
-      ctx.fillText("Geschafft! Blaui und Papa genießen Mamas leckeren Eintopf.", W / 2, 304);
+      ctx.font = "800 13px Orbitron, Rajdhani, sans-serif";
+      ctx.fillText("Geschafft! Blaui, Mami und Papi genießen Mamas leckeren Eintopf.", W / 2, 308);
 
-      this.drawButton(ctx, "again", "↻  NOCHMAL SPIELEN", W / 2 - 210, 328, 200, 38, "#4ade80", 12);
-      this.drawButton(ctx, "hub", "↩  ZURÜCK ZUR OBERWELT", W / 2 + 10, 328, 210, 38, "#38bdf8", 11);
+      this.drawButton(ctx, "again", "↻  NOCHMAL SPIELEN", W / 2 - 210, 332, 200, 38, "#4ade80", 12);
+      this.drawButton(ctx, "hub", "↩  ZURÜCK ZUR OBERWELT", W / 2 + 10, 332, 210, 38, "#38bdf8", 11);
     },
 
     drawButton(ctx, id, label, x, y, w, h, color, size = 12) {
