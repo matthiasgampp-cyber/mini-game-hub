@@ -105,7 +105,7 @@
     }
   };
 
-  const JOYSTICK_GAMES = new Set(["pandiesabenteuer", "yetiadventure", "pandapitfall"]);
+  const JOYSTICK_GAMES = new Set(["pandiesabenteuer", "yetiadventure", "pandapitfall", "blauiswelt"]);
 
   let controlMode = storage.get("control_mode", "buttons"); // "buttons" | "touch"
   let dpadMode = storage.get("dpad_mode", "joystick"); // "joystick" | "arrows"

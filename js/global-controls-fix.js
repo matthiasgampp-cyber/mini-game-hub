@@ -56,7 +56,7 @@
     found.forEach((el) => el.remove());
   }
 
-  const JOYSTICK_GAMES = new Set(["pandiesabenteuer", "yetiadventure", "pandapitfall"]);
+  const JOYSTICK_GAMES = new Set(["pandiesabenteuer", "yetiadventure", "pandapitfall", "blauiswelt"]);
 
   function releaseAllHeld() {
     Object.keys(state.held).forEach((k) => {
