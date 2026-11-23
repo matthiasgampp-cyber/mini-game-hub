@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Mahjong Solitaire</title>
+  <meta name="description" content="Mahjong Solitaire mit garantierter Lösbarkeit, 5 Layouts, Hinweisen, Undo und Bestzeiten.">
+  <meta name="theme-color" content="#14573c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mahjong">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="dim-blocked">
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <h1>麻雀 <span>Mahjong</span></h1>
+        <select id="layoutSelect" aria-label="Layout wählen"></select>
+      </div>
+      <div class="stats">
+        <div class="stat" id="movesStat"><span class="label">Züge</span><b id="movesCount">0</b></div>
+        <div class="stat"><span class="label">Steine</span><b id="tilesLeft">144</b></div>
+        <div class="stat"><span class="label">Zeit</span><b id="timer">00:00</b></div>
+        <div class="stat"><span class="label">Best</span><b id="bestTime">–</b></div>
+      </div>
+    </header>
+
+    <main id="boardWrap">
+      <div id="board"></div>
+      <div id="stuckBanner" hidden>
+        <strong>Keine Züge mehr möglich!</strong>
+        <div class="row">
+          <button id="stuckUndo" class="btn">↶ Zug zurück</button>
+          <button id="stuckShuffle" class="btn primary">🔀 Lösbar mischen</button>
+          <button id="stuckNew" class="btn">Neues Spiel</button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="toolbar">
+      <button id="btnNew" class="tool" title="Neues Spiel (N)"><i>🀄</i><span>Neu</span></button>
+      <button id="btnUndo" class="tool" title="Rückgängig (U)"><i>↶</i><span>Zurück</span></button>
+      <button id="btnHint" class="tool" title="Hinweis (H)"><i>💡</i><span>Tipp</span></button>
+      <button id="btnShuffle" class="tool" title="Mischen (M)"><i>🔀</i><span>Mischen</span></button>
+      <button id="btnSound" class="tool" title="Ton an/aus"><i>🔊</i><span>Ton</span></button>
+      <button id="btnSettings" class="tool" title="Einstellungen"><i>⚙️</i><span>Optionen</span></button>
+    </footer>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <div id="settingsModal" class="modal" hidden>
+    <div class="dialog">
+      <h2>Einstellungen</h2>
+      <label class="opt"><input type="checkbox" id="optSound"> Soundeffekte</label>
+      <label class="opt"><input type="checkbox" id="optDim"> Blockierte Steine abdunkeln</label>
+      <button id="btnResetBest" class="btn">Bestzeiten zurücksetzen</button>
+      <p class="hint-text">Tastatur: <kbd>U</kbd> Zurück · <kbd>H</kbd> Tipp · <kbd>M</kbd> Mischen · <kbd>N</kbd> Neu</p>
+      <button id="closeSettings" class="btn primary">Schließen</button>
+    </div>
+  </div>
+
+  <div id="winModal" class="modal" hidden>
+    <div class="dialog">
+      <h2>🎉 Geschafft!</h2>
+      <p>Zeit: <b id="winTime">00:00</b></p>
+      <p>Bestzeit: <b id="winBest">–</b></p>
+      <p id="winRecord" class="record" hidden>🏆 Neue Bestzeit!</p>
+      <div class="row">
+        <button id="winAgain" class="btn primary">Nochmal spielen</button>
+        <button id="winLayout" class="btn">Anderes Layout</button>
+      </div>
+    </div>
+  </div>
+
+  <noscript>Dieses Spiel benötigt JavaScript.</noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

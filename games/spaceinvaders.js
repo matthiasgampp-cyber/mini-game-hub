@@ -96,13 +96,12 @@
           >
             ⚡ Waffe
           </button>
-          <button
+          <div
             id="si-fire-btn"
-            type="button"
-            class="px-6 py-2 sm:px-7 sm:py-2.5 rounded-xl font-orbitron text-xs sm:text-sm font-black uppercase tracking-wider bg-gradient-to-r from-cyan-400 to-cyan-300 text-slate-950 hover:bg-cyan-200 active:scale-95 transition shadow-lg shadow-cyan-500/35 touch-none select-none"
+            class="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl font-orbitron text-xs sm:text-sm font-black uppercase tracking-wider bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 select-none"
           >
-            🔥 FEUER
-          </button>
+            🔥 AUTOFEUER
+          </div>
         </div>
       `;
 
@@ -678,8 +677,7 @@
 
       p.fireCooldown = Math.max(0, p.fireCooldown - dt);
       const spec = WEAPON_SPECS[this.currentWeapon] || WEAPON_SPECS.laser;
-      const shouldFire = this.keys.fire || Boolean(gHeld.jump || gHeld.up);
-      if (shouldFire && p.fireCooldown <= 0) {
+      if (p.fireCooldown <= 0) {
         this.firePlayerWeapon();
         p.fireCooldown = spec.cooldown;
       }
