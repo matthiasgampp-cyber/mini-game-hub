@@ -290,7 +290,7 @@
 
       this.canvas = document.createElement("canvas");
       this.canvas.className = "block rounded-2xl border border-sky-300/35 shadow-2xl touch-none bg-slate-950";
-      this.c = this.canvas.getContext("2d");
+      this.c = this.canvas.getContext("2d", { alpha: false });
 
       this.canvasHost.appendChild(this.canvas);
       this.wrap.appendChild(this.hud);
@@ -410,7 +410,7 @@
       }
       this.canvas.style.width = `${Math.round(w)}px`;
       this.canvas.style.height = `${Math.round(h)}px`;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      const dpr = window.getOptimalDPR ? window.getOptimalDPR() : Math.min(window.devicePixelRatio || 1, 1.25);
       this.canvas.width = Math.round(w * dpr);
       this.canvas.height = Math.round(h * dpr);
       // Level-Zustand bleibt beim Drehen/Resizen erhalten
@@ -713,13 +713,10 @@
       ctx.fillStyle = g;
       ctx.strokeStyle = p.color;
       ctx.lineWidth = 3;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 20;
       ctx.beginPath();
       ctx.roundRect(x, y, w, h, 20);
       ctx.fill();
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
       // Mini-Portal-Strudel
       const cx = VIRTUAL_W / 2;

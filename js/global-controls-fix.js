@@ -212,17 +212,22 @@
   });
   window.addEventListener("resize", handleViewportChange);
 
-  const mo = new MutationObserver(() => {
-    removeDuplicateOverlays();
+  const mo = new MutationObserver((mutations) => {
+    for (let i = 0; i < mutations.length; i++) {
+      if (mutations[i].addedNodes.length > 0) {
+        removeDuplicateOverlays();
+        break;
+      }
+    }
   });
 
   document.addEventListener("DOMContentLoaded", () => {
     syncGlobalPadState();
-    mo.observe(document.body, { childList: true, subtree: true });
+    mo.observe(document.body, { childList: true, subtree: false });
   });
 
   if (document.body) {
     syncGlobalPadState();
-    mo.observe(document.body, { childList: true, subtree: true });
+    mo.observe(document.body, { childList: true, subtree: false });
   }
 })();

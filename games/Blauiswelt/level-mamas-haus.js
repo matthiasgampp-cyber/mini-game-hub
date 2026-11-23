@@ -881,12 +881,13 @@
       if (this.swipeTrail.length > 1) {
         ctx.save();
         ctx.lineCap = "round";
-        ctx.strokeStyle = "#ffffff";
-        ctx.shadowColor = "#38bdf8";
-        ctx.shadowBlur = 10;
-        ctx.lineWidth = 4;
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+        ctx.lineWidth = 8;
         ctx.beginPath();
         this.swipeTrail.forEach((pt, i) => (i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y)));
+        ctx.stroke();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 4;
         ctx.stroke();
         ctx.restore();
       }

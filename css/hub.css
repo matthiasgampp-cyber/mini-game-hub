@@ -40,46 +40,32 @@ body,
 }
 
 .neon-text-cyan {
-  text-shadow:
-    0 0 8px rgba(34, 211, 238, 0.55),
-    0 0 22px rgba(34, 211, 238, 0.25);
+  text-shadow: 0 0 6px rgba(34, 211, 238, 0.45);
 }
 
 .neon-text-pink {
-  text-shadow:
-    0 0 8px rgba(244, 114, 182, 0.55),
-    0 0 22px rgba(244, 114, 182, 0.25);
+  text-shadow: 0 0 6px rgba(244, 114, 182, 0.45);
 }
 
 .game-card {
   position: relative;
-  background: linear-gradient(160deg, rgba(15, 23, 42, 0.92), rgba(6, 10, 22, 0.96));
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.94), rgba(6, 10, 22, 0.98));
   border: 1px solid rgba(34, 211, 238, 0.22);
   border-radius: 1rem;
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
 .game-card:hover {
   transform: translateY(-2px);
   border-color: rgba(34, 211, 238, 0.65);
-  box-shadow: 0 0 24px rgba(34, 211, 238, 0.15);
 }
 
 .game-card:active {
   transform: scale(0.98);
 }
 
-@keyframes pulseGlow {
-  0%, 100% {
-    opacity: 0.75;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
 .neon-pulse {
-  animation: pulseGlow 2.4s ease-in-out infinite;
+  opacity: 0.95;
 }
 
 /* =========================================================
@@ -109,14 +95,11 @@ body,
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: transform 0.08s ease, background-color 0.1s ease, border-color 0.1s ease, box-shadow 0.1s ease;
+  transition: transform 0.06s ease, background-color 0.08s ease;
 }
 
 #global-mini-controls button[data-gpad]:active {
   transform: scale(0.94);
-  box-shadow: 0 0 16px rgba(34, 211, 238, 0.45);
 }
 
 /* =========================================================
@@ -137,21 +120,16 @@ body,
   width: 114px;
   height: 114px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(15, 23, 42, 0.78) 0%, rgba(6, 10, 24, 0.92) 100%);
-  border: 2px solid rgba(34, 211, 238, 0.38);
-  box-shadow: 0 0 16px rgba(34, 211, 238, 0.2), inset 0 0 16px rgba(34, 211, 238, 0.12);
+  background: rgba(8, 13, 28, 0.84);
+  border: 2px solid rgba(34, 211, 238, 0.42);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .virtual-joystick-base.is-active {
-  border-color: rgba(34, 211, 238, 0.75);
-  box-shadow: 0 0 22px rgba(34, 211, 238, 0.38), inset 0 0 18px rgba(34, 211, 238, 0.22);
+  border-color: rgba(34, 211, 238, 0.85);
 }
 
 .virtual-joystick-dir {
@@ -161,7 +139,6 @@ body,
   line-height: 1;
   pointer-events: none;
   user-select: none;
-  transition: color 0.1s ease, text-shadow 0.1s ease, transform 0.1s ease;
 }
 
 .virtual-joystick-dir.dir-up {
@@ -190,13 +167,12 @@ body,
 
 .virtual-joystick-dir.active {
   color: #22d3ee;
-  text-shadow: 0 0 8px #22d3ee, 0 0 16px rgba(34, 211, 238, 0.8);
-  transform: translateX(-50%) scale(1.25);
+  transform: translateX(-50%) scale(1.2);
 }
 
 .virtual-joystick-dir.dir-left.active,
 .virtual-joystick-dir.dir-right.active {
-  transform: translateY(-50%) scale(1.25);
+  transform: translateY(-50%) scale(1.2);
 }
 
 .virtual-joystick-stick {
@@ -210,18 +186,16 @@ body,
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #38bdf8 0%, #0284c7 65%, #0369a1 100%);
   border: 2px solid rgba(224, 242, 254, 0.85);
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.6);
   pointer-events: none;
   will-change: transform;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.12s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.1s ease-out;
 }
 
 .virtual-joystick-stick.is-dragging {
   transition: none !important;
-  box-shadow: 0 0 18px rgba(56, 189, 248, 0.9), inset 0 2px 4px rgba(255, 255, 255, 0.7);
   background: radial-gradient(circle at 35% 35%, #7dd3fc 0%, #0ea5e9 60%, #0284c7 100%);
 }
 
@@ -230,7 +204,6 @@ body,
   height: 10px;
   border-radius: 50%;
   background: rgba(240, 249, 255, 0.95);
-  box-shadow: 0 0 6px #22d3ee;
 }
 
 /* Portrait specific optimizations */
@@ -252,7 +225,6 @@ body,
     height: 52px;
     font-size: 13px;
     border-radius: 1.25rem;
-    box-shadow: 0 4px 18px rgba(34, 211, 238, 0.45);
   }
 
   .virtual-joystick-base {
@@ -287,7 +259,6 @@ body,
     height: 48px;
     font-size: 12px;
     border-radius: 1.15rem;
-    box-shadow: 0 4px 16px rgba(34, 211, 238, 0.4);
   }
 
   .virtual-joystick-base {

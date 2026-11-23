@@ -443,14 +443,16 @@
       ctx.fill();
 
       // Glühende rote/pinke Monster-Pupillen
+      ctx.fillStyle = "rgba(255, 42, 133, 0.28)";
+      ctx.beginPath();
+      ctx.arc(b.x - 19, topY + 36, 7.5, 0, Math.PI * 2);
+      ctx.arc(b.x + 5, topY + 36, 7.5, 0, Math.PI * 2);
+      ctx.fill();
       ctx.fillStyle = "#ff2a85";
-      ctx.shadowColor = "#ff2a85";
-      ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.arc(b.x - 19, topY + 36, 4.4, 0, Math.PI * 2);
       ctx.arc(b.x + 5, topY + 36, 4.4, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
 
       // Aufgerissener Monster-Rachen mit spitzen Eis-Reißzähnen
       ctx.fillStyle = "#090d16";

@@ -80,7 +80,7 @@
 
       this.canvas = document.createElement("canvas");
       this.canvas.className = "block rounded-xl border border-cyan-500/30 bg-slate-950/90 touch-none";
-      this.canvasCtx = this.canvas.getContext("2d");
+      this.canvasCtx = this.canvas.getContext("2d", { alpha: false });
 
       this.controlsBar = document.createElement("div");
       this.controlsBar.className = "w-full max-w-[480px] flex items-center justify-between gap-2 mt-2 px-1";
@@ -106,7 +106,7 @@
       `;
 
       this.overlay = document.createElement("div");
-      this.overlay.className = "hidden absolute inset-0 z-10 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4";
+      this.overlay.className = "hidden absolute inset-0 z-10 flex items-center justify-center bg-slate-950/85 p-4";
 
       this.root.appendChild(this.hud);
       this.root.appendChild(this.canvas);
@@ -230,7 +230,7 @@
 
       const w = Math.min(availW, 480);
       const h = availH;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = window.getOptimalDPR ? window.getOptimalDPR() : Math.min(window.devicePixelRatio || 1, 1.25);
 
       this.canvas.style.width = `${w}px`;
       this.canvas.style.height = `${h}px`;

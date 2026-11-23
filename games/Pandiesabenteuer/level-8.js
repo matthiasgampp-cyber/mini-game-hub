@@ -463,8 +463,6 @@
     ctx.lineWidth = 3.5;
     ctx.setLineDash([8, 14]);
     ctx.lineDashOffset = pulseOffset;
-    ctx.shadowColor = "#38bdf8";
-    ctx.shadowBlur = 8;
     ctx.beginPath();
     ctx.moveTo(1040, 130);
     ctx.lineTo(1040, 375);
@@ -564,11 +562,8 @@
 
     ctx.font = "bold 11px Orbitron, sans-serif";
     ctx.fillStyle = "#38bdf8";
-    ctx.shadowColor = "#38bdf8";
-    ctx.shadowBlur = 8;
     ctx.textAlign = "center";
     ctx.fillText("★ CYBER MECH ARENA • FINAL BATTLE ★", ww * 0.5, holoY + 4);
-    ctx.shadowBlur = 0;
     ctx.restore();
 
     // E. Stadion-Kamerablitze (Zufällige Flashlights in den Rängen)
@@ -821,15 +816,12 @@
     } else {
       // Hell leuchtendes Cyber-Visor (Smaragdgrün)
       ctx.fillStyle = "#34d399";
-      ctx.shadowColor = "#34d399";
-      ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.roundRect(-13, -4, 7, 5, 2);
       ctx.fill();
       ctx.beginPath();
       ctx.roundRect(6, -4, 7, 5, 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
     }
 
     // Panda-Nase
@@ -971,9 +963,9 @@
     ctx.save();
     ctx.translate(x, y);
 
-    // Flackern bei Treffer
+    // Flackern bei Treffer (ohne teuren ctx.filter)
     if (boss.hitFlashTimer > 0 && Math.floor(animClock * 24) % 2 === 0) {
-      ctx.filter = "brightness(2) contrast(1.5)";
+      ctx.globalAlpha = 0.55;
     }
 
     // Bei Zerstörung: Schütteln & Rauchen
@@ -1059,9 +1051,13 @@
     ctx.save();
     ctx.fillStyle = "#1e293b";
     ctx.fillRect(-34, -34, 14, 8);
+    if (flashPhase) {
+      ctx.fillStyle = "rgba(56, 189, 248, 0.35)";
+      ctx.beginPath();
+      ctx.arc(-27, -30, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.fillStyle = flashPhase ? "#38bdf8" : "#0284c7";
-    ctx.shadowColor = "#38bdf8";
-    ctx.shadowBlur = flashPhase ? 16 : 4;
     ctx.beginPath();
     ctx.roundRect(-33, -33, 12, 6, 2);
     ctx.fill();
@@ -1071,9 +1067,13 @@
     ctx.save();
     ctx.fillStyle = "#1e293b";
     ctx.fillRect(20, -34, 14, 8);
+    if (!flashPhase) {
+      ctx.fillStyle = "rgba(239, 68, 68, 0.35)";
+      ctx.beginPath();
+      ctx.arc(27, -30, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.fillStyle = !flashPhase ? "#ef4444" : "#991b1b";
-    ctx.shadowColor = "#ef4444";
-    ctx.shadowBlur = !flashPhase ? 16 : 4;
     ctx.beginPath();
     ctx.roundRect(21, -33, 12, 6, 2);
     ctx.fill();
@@ -1100,13 +1100,14 @@
 
     // Rotes Sucher-Auge / Scanner (bewegt sich hin und her)
     const eyeScanX = Math.sin(animClock * 5) * 7;
+    ctx.fillStyle = "rgba(239, 68, 68, 0.3)";
+    ctx.beginPath();
+    ctx.arc(eyeScanX, 0, 6, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = "#ef4444";
-    ctx.shadowColor = "#ef4444";
-    ctx.shadowBlur = 8;
     ctx.beginPath();
     ctx.arc(eyeScanX, 0, 3.5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.shadowBlur = 0;
     ctx.restore();
 
     // 6. POLIZEIKNÜPPEL & Schlagarm

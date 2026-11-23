@@ -61,14 +61,14 @@
   // ------------------------------------------------------------------
   // Hintergrund-Deko (deterministisch)
   // ------------------------------------------------------------------
-  const STARS = Array.from({ length: 42 }, (_, i) => ({
+  const STARS = Array.from({ length: 24 }, (_, i) => ({
     x: (i * 89 + 19) % W,
     y: (i * 47 + 13) % 210,
     r: 0.8 + (i % 3) * 0.55,
     ph: i * 0.9
   }));
 
-  const BG_SNOW = Array.from({ length: 45 }, (_, i) => ({
+  const BG_SNOW = Array.from({ length: 28 }, (_, i) => ({
     x: (i * 67 + 23) % W,
     y: (i * 39 + 17) % H,
     r: 1 + (i % 3) * 0.7,

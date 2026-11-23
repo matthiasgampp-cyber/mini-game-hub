@@ -75,10 +75,10 @@
       this.canvas = document.createElement("canvas");
       this.canvas.className = "block w-full h-full touch-none select-none";
       this.canvas.style.touchAction = "none";
-      this.canvasCtx = this.canvas.getContext("2d");
+      this.canvasCtx = this.canvas.getContext("2d", { alpha: false });
 
       this.menuOverlay = document.createElement("div");
-      this.menuOverlay.className = "absolute inset-0 z-10 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4";
+      this.menuOverlay.className = "absolute inset-0 z-10 flex items-center justify-center bg-slate-950/85 p-4";
       this.renderMenu();
 
       this.root.appendChild(this.canvas);
@@ -408,7 +408,7 @@
     resize() {
       if (!this.root || !this.canvas) return;
       const rect = this.root.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = window.getOptimalDPR ? window.getOptimalDPR() : Math.min(window.devicePixelRatio || 1, 1.25);
       const w = Math.max(240, rect.width);
       const h = Math.max(240, rect.height);
 
@@ -1364,8 +1364,6 @@
         ctx.strokeStyle = p ? p.color : "#22d3ee";
         if (p && p.eliminated) {
           ctx.lineWidth = 4;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 10;
         } else {
           ctx.lineWidth = 2;
           ctx.globalAlpha = 0.45;
@@ -1381,8 +1379,6 @@
       // 3 kurze diagonale Eck-Banden (Corner Bumpers)
       ctx.save();
       ctx.strokeStyle = "#e2e8f0";
-      ctx.shadowColor = "rgba(226, 232, 240, 0.6)";
-      ctx.shadowBlur = 8;
       ctx.lineWidth = 4;
       ctx.lineCap = "round";
       for (const bumper of this.tri.bumpers) {
@@ -1420,8 +1416,11 @@
         ctx.translate(pcx, pcy);
         ctx.rotate(angle);
         ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 12;
+        ctx.globalAlpha = 0.2;
+        ctx.beginPath();
+        ctx.roundRect(-p.len / 2 - 2, -p.thick / 2 - 2, p.len + 4, p.thick + 4, 7);
+        ctx.fill();
+        ctx.globalAlpha = 1;
         ctx.beginPath();
         ctx.roundRect(-p.len / 2, -p.thick / 2, p.len, p.thick, 5);
         ctx.fill();
@@ -1506,8 +1505,6 @@
         ctx.strokeStyle = p.color;
         if (p.eliminated) {
           ctx.lineWidth = 4;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 10;
         } else {
           ctx.lineWidth = 2;
           ctx.globalAlpha = 0.45;
@@ -1538,8 +1535,6 @@
       // 4 diagonale 45°-Eck-Banden
       ctx.save();
       ctx.strokeStyle = "#e2e8f0";
-      ctx.shadowColor = "rgba(226, 232, 240, 0.6)";
-      ctx.shadowBlur = 8;
       ctx.lineWidth = 4;
       ctx.lineCap = "round";
       for (const bumper of q.bumpers) {
@@ -1578,8 +1573,6 @@
       for (const p of this.players) {
         if (p.eliminated) continue;
         ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 12;
         ctx.beginPath();
         ctx.roundRect(p.x, p.y, p.w, p.h, 6);
         ctx.fill();
@@ -1591,7 +1584,8 @@
       const w = this.canvas.clientWidth || 360;
       const h = this.canvas.clientHeight || 640;
 
-      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#04040a";
+      ctx.fillRect(0, 0, w, h);
 
       ctx.save();
 
@@ -1639,15 +1633,12 @@
         for (const p of this.players) {
           if (p.eliminated) continue;
           ctx.fillStyle = p.color;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 12;
           ctx.beginPath();
           ctx.roundRect(p.x, p.y, p.w, p.h, 6);
           ctx.fill();
         }
       }
 
-      ctx.shadowBlur = 0;
       for (let i = 0; i < this.ball.trail.length; i++) {
         const t = this.ball.trail[i];
         const alpha = ((i + 1) / this.ball.trail.length) * 0.28;
@@ -1657,16 +1648,18 @@
         ctx.arc(t.x, t.y, this.ball.radius * 0.75, 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.globalAlpha = 1;
-
+      ctx.globalAlpha = 0.22;
       ctx.fillStyle = this.ball.color;
-      ctx.shadowColor = this.ball.color;
-      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(this.ball.x, this.ball.y, this.ball.radius * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = this.ball.color;
       ctx.beginPath();
       ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.shadowBlur = 0;
       for (const pt of this.particles) {
         ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
         ctx.fillStyle = pt.color;

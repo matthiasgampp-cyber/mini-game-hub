@@ -115,8 +115,8 @@
         "relative flex-1 w-full min-h-0 flex items-center justify-center overflow-hidden p-1 sm:p-2";
 
       this.canvas = document.createElement("canvas");
-      this.canvas.className = "block rounded-2xl border border-emerald-400/35 shadow-2xl touch-none bg-slate-950";
-      this.c = this.canvas.getContext("2d");
+      this.canvas.className = "block rounded-2xl border border-emerald-400/35 touch-none bg-slate-950";
+      this.c = this.canvas.getContext("2d", { alpha: false });
 
       this.canvasHost.appendChild(this.canvas);
       this.wrap.appendChild(this.hud);
@@ -319,7 +319,7 @@
       this.canvas.style.width = `${Math.round(w)}px`;
       this.canvas.style.height = `${Math.round(h)}px`;
 
-      this.view.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      this.view.dpr = window.getOptimalDPR ? window.getOptimalDPR() : Math.min(window.devicePixelRatio || 1, 1.25);
       this.canvas.width = Math.round(w * this.view.dpr);
       this.canvas.height = Math.round(h * this.view.dpr);
 
@@ -421,8 +421,11 @@
     }
 
     spawnParticles(x, y, color, count = 12) {
-      for (let i = 0; i < count; i++) {
-        const ang = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+      const maxParticles = 70;
+      const allowed = Math.min(count, maxParticles - this.particles.length);
+      if (allowed <= 0) return;
+      for (let i = 0; i < allowed; i++) {
+        const ang = (Math.PI * 2 * i) / allowed + Math.random() * 0.4;
         const spd = 40 + Math.random() * 120;
         this.particles.push({
           x,
@@ -2081,20 +2084,28 @@
       ctx.save();
       ctx.translate(-this.camera.x, -this.camera.y);
 
+      const camX = this.camera.x;
+      const camY = this.camera.y;
+      const viewRight = camX + w;
+      const viewBottom = camY + h;
+
       if (this.levelMode === "maze") {
-        this._drawBambooWalls(ctx, this.walls, this.camera.x, this.camera.y, w, h);
-        if (this.coins.length > 0) this._drawCoins(ctx, this.coins, this.camera.x, this.camera.y, w, h);
+        this._drawBambooWalls(ctx, this.walls, camX, camY, w, h);
+        if (this.coins.length > 0) this._drawCoins(ctx, this.coins, camX, camY, w, h);
         if (this.keys.length > 0) this._drawKeys(ctx, this.keys);
         if (this.cage) this._drawCageAndSecondPanda(ctx, this.cage);
         for (const cop of this.cops) {
+          if (cop.x + (cop.w || 40) < camX - 60 || cop.x > viewRight + 60 || cop.y + (cop.h || 40) < camY - 60 || cop.y > viewBottom + 60) continue;
           this._drawCop(ctx, cop);
         }
         if (this.exit) this._drawExit(ctx, this.exit);
       } else {
         for (const bam of this.bamboos) {
+          if (bam.x + (bam.w || 30) < camX - 60 || bam.x - (bam.w || 30) > viewRight + 60) continue;
           this._drawBamboo(ctx, bam);
         }
         for (const plat of this.platforms) {
+          if (plat.x + plat.w < camX - 40 || plat.x > viewRight + 40 || plat.y + plat.h < camY - 40 || plat.y > viewBottom + 40) continue;
           if (plat.isStone || this.levelMode === "side") {
             this._drawStoneStairPlatform(ctx, plat);
           } else {
@@ -2104,6 +2115,7 @@
         if (this.keys.length > 0) this._drawKeys(ctx, this.keys);
         if (this.cage) this._drawCageAndSecondPanda(ctx, this.cage);
         for (const cop of this.cops) {
+          if (cop.x + (cop.w || 40) < camX - 60 || cop.x > viewRight + 60 || cop.y + (cop.h || 40) < camY - 60 || cop.y > viewBottom + 60) continue;
           this._drawCop(ctx, cop);
         }
         if (this.exit) this._drawExit(ctx, this.exit);

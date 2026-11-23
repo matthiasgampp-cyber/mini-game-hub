@@ -885,13 +885,10 @@
       ctx.fillStyle = g;
       ctx.strokeStyle = won ? "#4ade80" : "#f87171";
       ctx.lineWidth = 3;
-      ctx.shadowColor = won ? "#4ade80" : "#f87171";
-      ctx.shadowBlur = 20;
       ctx.beginPath();
       ctx.roundRect(px, py, pw, ph, 18);
       ctx.fill();
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";

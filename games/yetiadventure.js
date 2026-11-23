@@ -172,8 +172,8 @@
 
       this.canvas = document.createElement("canvas");
       this.canvas.className =
-        "block rounded-2xl border border-cyan-300/35 bg-[#071c2c] shadow-[0_0_30px_rgba(34,211,238,0.16)] touch-none";
-      this.canvasCtx = this.canvas.getContext("2d");
+        "block rounded-2xl border border-cyan-300/35 bg-[#071c2c] touch-none";
+      this.canvasCtx = this.canvas.getContext("2d", { alpha: false });
 
       this.touchPad = document.createElement("div");
       this.touchPad.className =
@@ -191,7 +191,7 @@
 
       this.overlay = document.createElement("div");
       this.overlay.className =
-        "hidden absolute inset-0 z-20 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4";
+        "hidden absolute inset-0 z-20 flex items-center justify-center bg-slate-950/85 p-4";
 
       this.canvasWrapper.appendChild(this.canvas);
       this.canvasWrapper.appendChild(this.touchPad);
@@ -512,7 +512,7 @@
       this._lastCanvasH = targetH;
 
       const prevRiverY = this.field.riverY || targetH * 0.78;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = window.getOptimalDPR ? window.getOptimalDPR() : Math.min(window.devicePixelRatio || 1, 1.25);
 
       this.canvas.style.width = `${targetW}px`;
       this.canvas.style.height = `${targetH}px`;

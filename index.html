@@ -15,8 +15,8 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <link rel="manifest" href="./manifest.json?v=2.3.0" />
-  <link rel="stylesheet" href="./css/hub.css?v=2.3.0" />
+  <link rel="manifest" href="./manifest.json?v=2.3.1" />
+  <link rel="stylesheet" href="./css/hub.css?v=2.3.1" />
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -29,7 +29,7 @@
 <body class="h-full w-full overflow-hidden bg-[#04040a] text-slate-100 font-rajdhani touch-action-none">
   <div id="app" class="relative h-full w-full flex flex-col">
     <!-- Globale Top-Leiste -->
-    <header class="relative z-20 shrink-0 flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-cyan-500/20 bg-slate-950/75 backdrop-blur-md">
+    <header class="relative z-20 shrink-0 flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-cyan-500/20 bg-slate-950/95">
       <div class="flex items-center gap-3">
         <button
           id="hub-home-btn"
@@ -83,7 +83,7 @@
         </div>
 
         <!-- Steuerungs-Auswahl vorab (für Pandi & Yeti Jump'n'Runs) -->
-        <div id="hub-control-settings" class="mb-6 p-3.5 sm:p-4 rounded-2xl border border-cyan-400/25 bg-slate-900/80 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_20px_rgba(34,211,238,0.06)]">
+        <div id="hub-control-settings" class="mb-6 p-3.5 sm:p-4 rounded-2xl border border-cyan-400/25 bg-slate-900/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-center gap-3">
             <span class="text-2xl">🕹️</span>
             <div>
@@ -125,9 +125,9 @@
       <!-- Pause-Overlay -->
       <div
         id="pause-overlay"
-        class="hidden absolute inset-0 z-30 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4"
+        class="hidden absolute inset-0 z-30 flex items-center justify-center bg-slate-950/85 p-4"
       >
-        <div class="w-full max-w-xs rounded-2xl border border-cyan-400/40 bg-slate-900/95 p-6 text-center shadow-[0_0_35px_rgba(34,211,238,0.2)]">
+        <div class="w-full max-w-xs rounded-2xl border border-cyan-400/40 bg-slate-900 p-6 text-center">
           <h3 class="font-orbitron text-xl font-black text-cyan-300 mb-2">PAUSIERT</h3>
           <p class="text-sm text-slate-400 mb-6">Spiel angehalten</p>
           <div class="flex flex-col gap-2.5">
@@ -159,24 +159,24 @@
   </div>
 
   <!-- Module in fester Reihenfolge laden (mit Cache-Busting Version) -->
-  <script>window.APP_VERSION = "2.3.0";</script>
-  <script src="./js/hub.js?v=2.3.0"></script>
-  <script src="./games/_template.js?v=2.3.0"></script>
-  <script src="./games/pong.js?v=2.3.0"></script>
-  <script src="./games/snake.js?v=2.3.0"></script>
-  <script src="./games/airhockey.js?v=2.3.0"></script>
-  <script src="./games/brickbreaker.js?v=2.3.0"></script>
-  <script src="./games/spaceinvaders.js?v=2.3.0"></script>
-  <script src="./games/spacetaxi.js?v=2.3.0"></script>
-  <script src="./games/Pandapitfall/index.js?v=2.3.0"></script>
-  <script src="./games/pandapitfall.js?v=2.3.0"></script>
-  <script src="games/yetiadventure.js?v=2.3.0"></script>
-  <script src="./games/pandiesabenteuer.js?v=2.3.0"></script>
-  <script src="./games/Pandiesabenteuer/index.js?v=2.3.0"></script>
-  <script src="./games/Blauiswelt/index.js?v=2.3.0"></script>
-  <script src="./games/blauiswelt.js?v=2.3.0"></script>
-  <script src="./games/mahjong.js?v=2.3.0"></script>
-  <script src="./js/virtual-joystick.js?v=2.3.0"></script>
-  <script src="./js/global-controls-fix.js?v=2.3.0"></script>
+  <script>window.APP_VERSION = "2.3.1";</script>
+  <script src="./js/hub.js?v=2.3.1"></script>
+  <script src="./games/_template.js?v=2.3.1"></script>
+  <script src="./games/pong.js?v=2.3.1"></script>
+  <script src="./games/snake.js?v=2.3.1"></script>
+  <script src="./games/airhockey.js?v=2.3.1"></script>
+  <script src="./games/brickbreaker.js?v=2.3.1"></script>
+  <script src="./games/spaceinvaders.js?v=2.3.1"></script>
+  <script src="./games/spacetaxi.js?v=2.3.1"></script>
+  <script src="./games/Pandapitfall/index.js?v=2.3.1"></script>
+  <script src="./games/pandapitfall.js?v=2.3.1"></script>
+  <script src="games/yetiadventure.js?v=2.3.1"></script>
+  <script src="./games/pandiesabenteuer.js?v=2.3.1"></script>
+  <script src="./games/Pandiesabenteuer/index.js?v=2.3.1"></script>
+  <script src="./games/Blauiswelt/index.js?v=2.3.1"></script>
+  <script src="./games/blauiswelt.js?v=2.3.1"></script>
+  <script src="./games/mahjong.js?v=2.3.1"></script>
+  <script src="./js/virtual-joystick.js?v=2.3.1"></script>
+  <script src="./js/global-controls-fix.js?v=2.3.1"></script>
 </body>
 </html>

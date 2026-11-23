@@ -3,6 +3,17 @@
 
   const STORAGE_PREFIX = "neon_hub_v1_";
 
+  // Zentrales DPR-Cap für Tablets und schwächere Mobilgeräte (max 1.25 auf Touch/Mobilgeräten, max 2 auf Desktop)
+  window.getOptimalDPR = function getOptimalDPR() {
+    const raw = window.devicePixelRatio || 1;
+    const isTouchOrMobile =
+      (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
+      "ontouchstart" in window ||
+      (navigator.maxTouchPoints || 0) > 0 ||
+      window.innerWidth <= 1024;
+    return isTouchOrMobile ? Math.min(raw, 1.25) : Math.min(raw, 2);
+  };
+
   class SoundEngine {
     constructor() {
       this.ctx = null;
@@ -686,7 +697,7 @@
   // =========================================================
   // Automatischer Update- & Cache-Buster-Mechanismus für Handys
   // =========================================================
-  const APP_VERSION = window.APP_VERSION || "2.3.0";
+  const APP_VERSION = window.APP_VERSION || "2.3.1";
 
   // Bereinige etwaige alte / verwaiste Service Worker & Cache-Storage auf Mobilgeräten
   if ("serviceWorker" in navigator) {

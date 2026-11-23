@@ -1348,13 +1348,10 @@
       ctx.fillStyle = g;
       ctx.strokeStyle = "#fde047";
       ctx.lineWidth = 3;
-      ctx.shadowColor = "#fde047";
-      ctx.shadowBlur = 20;
       ctx.beginPath();
       ctx.roundRect(px, py, pw, ph, 18);
       ctx.fill();
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";

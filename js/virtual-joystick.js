@@ -187,9 +187,15 @@
         this.clampedY = rawDy;
       }
 
-      // Knauf flüssig rendern
+      // Knauf flüssig rendern (nur bei spürbarer Änderung)
       if (this.stickEl) {
-        this.stickEl.style.transform = `translate3d(${this.clampedX.toFixed(1)}px, ${this.clampedY.toFixed(1)}px, 0)`;
+        const nextX = Math.round(this.clampedX * 10) / 10;
+        const nextY = Math.round(this.clampedY * 10) / 10;
+        if (nextX !== this.currentX || nextY !== this.currentY) {
+          this.currentX = nextX;
+          this.currentY = nextY;
+          this.stickEl.style.transform = `translate3d(${nextX}px, ${nextY}px, 0)`;
+        }
       }
 
       // Richtungen mit Deadzone und 8-Wege-Erkennung bestimmen
@@ -207,9 +213,6 @@
         nextUp = ny < -0.38;
       }
 
-      // Visuelle Indikatoren aktualisieren
-      this.updateIndicators(nextLeft, nextRight, nextUp, nextDown);
-
       const changed =
         this.directions.left !== nextLeft ||
         this.directions.right !== nextRight ||
@@ -217,6 +220,9 @@
         this.directions.down !== nextDown;
 
       if (changed) {
+        // Visuelle Indikatoren nur bei Richtungswechsel aktualisieren (spart DOM-Writes pro Frame)
+        this.updateIndicators(nextLeft, nextRight, nextUp, nextDown);
+
         this.directions.left = nextLeft;
         this.directions.right = nextRight;
         this.directions.up = nextUp;
@@ -244,6 +250,8 @@
 
     reset() {
       this.activePointerId = null;
+      this.currentX = 0;
+      this.currentY = 0;
 
       if (this.baseEl) {
         this.baseEl.classList.remove("is-active");

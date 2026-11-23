@@ -59,7 +59,7 @@
 
   // ---------- Deko-Daten (deterministisch, flackerfrei) ----------
   const r1 = rng(42);
-  const STARS = Array.from({ length: 46 }, () => ({ x: r1() * W, y: r1() * 92, s: 0.6 + r1() * 1.4, ph: r1() * TAU }));
+  const STARS = Array.from({ length: 28 }, () => ({ x: r1() * W, y: r1() * 92, s: 0.6 + r1() * 1.4, ph: r1() * TAU }));
   const FLAKES = Array.from({ length: 26 }, () => ({ x: r1(), y: r1(), s: 1 + r1() * 1.8, sp: 0.05 + r1() * 0.08, ph: r1() * TAU }));
   const FIREFLIES = Array.from({ length: 12 }, () => ({ x: r1(), y: r1(), ph: r1() * TAU, sp: 0.4 + r1() * 0.6 }));
   const FLOWERS = Array.from({ length: 9 }, (_, i) => ({ dx: -64 + i * 16 + r1() * 6, dy: 6 + r1() * 10, c: ["#f472b6", "#fde047", "#f87171", "#c084fc"][i % 4], ph: r1() * TAU }));
@@ -151,13 +151,14 @@
 
   function frame(ctx, p, t, color, width = 5, boost = 0) {
     ctx.save();
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 14 + 6 * Math.sin(t * 3) + boost * 14;
     ctx.strokeStyle = color;
-    ctx.lineWidth = width;
+    ctx.globalAlpha = 0.25 + boost * 0.15;
+    ctx.lineWidth = width + 6;
     shapePath(ctx, p, width * 0.5);
     ctx.stroke();
-    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = width;
+    ctx.stroke();
     ctx.strokeStyle = "rgba(255,255,255,0.65)";
     ctx.lineWidth = 1.3;
     shapePath(ctx, p, width * 0.5 - 1);
@@ -259,8 +260,6 @@
     PORTALS.forEach((p, i) => {
       const a = (i * TAU) / PORTALS.length;
       ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
       ctx.beginPath();
       ctx.arc(Math.cos(a) * 44, Math.sin(a) * 44, 4.5, 0, TAU);
       ctx.fill();
@@ -724,10 +723,7 @@
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = "#ffffff";
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 5;
       ctx.fillText(label, sx, sy + 0.5);
-      ctx.shadowBlur = 0;
       if (state?.visited?.has(p.id)) {
         ctx.fillStyle = "#fde047";
         ctx.fillText("★", sx + w / 2 - 2, sy - h / 2 - 1);

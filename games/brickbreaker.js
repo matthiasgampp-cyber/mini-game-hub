@@ -214,10 +214,10 @@
 
       this.canvas = document.createElement("canvas");
       this.canvas.className = "block rounded-xl border border-amber-500/30 bg-[#0d1118] touch-none";
-      this.canvasCtx = this.canvas.getContext("2d");
+      this.canvasCtx = this.canvas.getContext("2d", { alpha: false });
 
       this.overlay = document.createElement("div");
-      this.overlay.className = "hidden absolute inset-0 z-10 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4";
+      this.overlay.className = "hidden absolute inset-0 z-10 flex items-center justify-center bg-slate-950/85 p-4";
 
       this.root.appendChild(this.hud);
       this.root.appendChild(this.canvas);
@@ -460,7 +460,7 @@
 
       const w = Math.min(availW, 480);
       const h = availH;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = window.getOptimalDPR ? window.getOptimalDPR() : Math.min(window.devicePixelRatio || 1, 1.25);
 
       const prevW = this.field.w || w;
       const prevH = this.field.h || h;
@@ -967,6 +967,9 @@
 
       ctx.clearRect(0, 0, w, h);
       ctx.save();
+
+      ctx.fillStyle = "#0d1118";
+      ctx.fillRect(0, 0, w, h);
 
       const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
       bgGrad.addColorStop(0, "rgba(245, 158, 11, 0.04)");

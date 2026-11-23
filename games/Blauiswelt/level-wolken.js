@@ -254,7 +254,7 @@
   // ------------------------------------------------------------------
   // Hintergrund-Deko (deterministisch)
   // ------------------------------------------------------------------
-  const BG_STARS = Array.from({ length: 80 }, () => ({
+  const BG_STARS = Array.from({ length: 40 }, () => ({
     x: Math.random() * WORLD_W,
     y: Math.random() * (WORLD_H * 0.72),
     r: randRange(0.9, 2.3),
@@ -1036,13 +1036,10 @@
       ctx.fillStyle = g;
       ctx.strokeStyle = "#fde047";
       ctx.lineWidth = 3;
-      ctx.shadowColor = "#fde047";
-      ctx.shadowBlur = 22;
       ctx.beginPath();
       ctx.roundRect(px, py, pw, ph, 18);
       ctx.fill();
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";

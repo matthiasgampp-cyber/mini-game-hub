@@ -256,7 +256,7 @@
 
       this.canvas = document.createElement("canvas");
       this.canvas.className = "block rounded-xl border border-cyan-500/30 bg-slate-950/90 touch-none";
-      this.canvasCtx = this.canvas.getContext("2d");
+      this.canvasCtx = this.canvas.getContext("2d", { alpha: false });
 
       this.controlsBar = document.createElement("div");
       this.controlsBar.className = "w-full max-w-[460px] flex items-center justify-between gap-2 mt-1.5";
@@ -274,7 +274,7 @@
       `;
 
       this.overlay = document.createElement("div");
-      this.overlay.className = "absolute inset-0 z-10 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4";
+      this.overlay.className = "absolute inset-0 z-10 flex items-center justify-center bg-slate-950/90 p-4";
 
       this.root.appendChild(this.hud);
       this.root.appendChild(this.statusLine);
@@ -447,7 +447,7 @@
 
       const w = Math.min(availW, 460);
       const h = availH;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = window.getOptimalDPR ? window.getOptimalDPR() : Math.min(window.devicePixelRatio || 1, 1.25);
 
       this.canvas.style.width = `${w}px`;
       this.canvas.style.height = `${h}px`;
@@ -1225,11 +1225,10 @@
         ctx.stroke();
       }
 
+      ctx.fillStyle = "rgba(250, 204, 21, 0.25)";
+      ctx.fillRect(-8, -t.h * 0.72 - 2, 16, 8);
       ctx.fillStyle = "#facc15";
-      ctx.shadowColor = "rgba(250, 204, 21, 0.7)";
-      ctx.shadowBlur = 8;
       ctx.fillRect(-6, -t.h * 0.72, 12, 4);
-      ctx.shadowBlur = 0;
 
       ctx.fillStyle = t.passenger ? "#facc15" : "#fbbf24";
       ctx.strokeStyle = "#fef08a";
@@ -1304,13 +1303,16 @@
         ctx.fillStyle = `${color}22`;
         ctx.fillRect(pad.x + 2, pad.y - 3, pad.w - 4, 3);
 
+        if (isPickup || isDest) {
+          ctx.fillStyle = color;
+          ctx.globalAlpha = 0.22;
+          ctx.fillRect(pad.x - 2, pad.y - 2, pad.w + 4, pad.h + 4);
+          ctx.globalAlpha = 1;
+        }
         ctx.fillStyle = color;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = isPickup || isDest ? 12 : 6;
         ctx.beginPath();
         ctx.roundRect(pad.x, pad.y, pad.w, pad.h, 3);
         ctx.fill();
-        ctx.shadowBlur = 0;
 
         ctx.fillStyle = "#e2e8f0";
         ctx.font = "700 9px Orbitron, sans-serif";

@@ -40,10 +40,10 @@
 
       this.canvas = document.createElement("canvas");
       this.canvas.className = "block w-full h-full touch-none";
-      this.canvasCtx = this.canvas.getContext("2d");
+      this.canvasCtx = this.canvas.getContext("2d", { alpha: false });
 
       this.overlay = document.createElement("div");
-      this.overlay.className = "absolute inset-0 z-10 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4";
+      this.overlay.className = "absolute inset-0 z-10 flex items-center justify-center bg-slate-950/85 p-4";
       this.renderMenu();
 
       this.root.appendChild(this.canvas);
@@ -157,7 +157,7 @@
     resize() {
       if (!this.root || !this.canvas) return;
       const rect = this.root.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = window.getOptimalDPR ? window.getOptimalDPR() : Math.min(window.devicePixelRatio || 1, 1.25);
       const w = Math.max(240, rect.width);
       const h = Math.max(300, rect.height);
 
@@ -536,17 +536,21 @@
     drawMallet(mallet) {
       const ctx = this.canvasCtx;
       ctx.save();
-      ctx.fillStyle = "rgba(10, 15, 30, 0.9)";
+      ctx.fillStyle = mallet.color;
+      ctx.globalAlpha = 0.18;
+      ctx.beginPath();
+      ctx.arc(mallet.x, mallet.y, mallet.r + 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "rgba(10, 15, 30, 0.92)";
       ctx.strokeStyle = mallet.color;
-      ctx.shadowColor = mallet.color;
-      ctx.shadowBlur = 14;
       ctx.lineWidth = 3.5;
       ctx.beginPath();
       ctx.arc(mallet.x, mallet.y, mallet.r, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      ctx.shadowBlur = 0;
       ctx.fillStyle = mallet.color;
       ctx.beginPath();
       ctx.arc(mallet.x, mallet.y, mallet.r * 0.34, 0, Math.PI * 2);
@@ -563,7 +567,8 @@
       const goalLeft = t.x + (t.w - t.goalW) / 2;
       const goalRight = t.x + (t.w + t.goalW) / 2;
 
-      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#04040a";
+      ctx.fillRect(0, 0, w, h);
       ctx.save();
 
       ctx.fillStyle = "rgba(8, 14, 28, 0.72)";
@@ -615,13 +620,17 @@
       }
       ctx.globalAlpha = 1;
 
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = "#38bdf8";
+      ctx.beginPath();
+      ctx.arc(this.puck.x, this.puck.y, this.puck.r * 1.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalAlpha = 1;
       ctx.fillStyle = "#f8fafc";
-      ctx.shadowColor = "#38bdf8";
-      ctx.shadowBlur = 14;
       ctx.beginPath();
       ctx.arc(this.puck.x, this.puck.y, this.puck.r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.shadowBlur = 0;
 
       this.drawMallet(this.p2);
       this.drawMallet(this.p1);

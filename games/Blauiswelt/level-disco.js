@@ -782,8 +782,6 @@
       this.ui.push({ id, x, y, w, h });
       const lit = opts.lit || 0;
       ctx.save();
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 8 + lit * 26;
       const g = ctx.createLinearGradient(0, y, 0, y + h);
       g.addColorStop(0, `rgba(25,10,60,${0.92})`);
       g.addColorStop(1, `rgba(60,20,110,${0.92})`);
@@ -812,8 +810,6 @@
       ctx.lineWidth = 2.2;
       for (let k = 0; k < 3; k++) {
         ctx.strokeStyle = `hsla(${(k * 70 + t * 40 + 280) % 360},95%,62%,${0.35 + 0.35 * b.pulse})`;
-        ctx.shadowColor = ctx.strokeStyle;
-        ctx.shadowBlur = 10;
         ctx.beginPath();
         for (let x = 0; x <= W; x += 10) {
           const y = 170 + k * 6 + Math.sin(x * 0.02 + t * 1.6 + k) * 5;
@@ -825,13 +821,8 @@
 
       // Neon-Schilder
       const flick = Math.sin(t * 23) > 0.93 ? 0.45 : 1;
-      ctx.save();
-      ctx.shadowColor = "#ff2fd1";
-      ctx.shadowBlur = 16 * flick;
       this.text(ctx, "DISCO", 96, 76, 30, `rgba(255,120,230,${flick})`, "center", 900);
-      ctx.shadowColor = "#22d3ee";
       this.text(ctx, "'80s", 624, 76, 30, "#a5f3fc", "center", 900);
-      ctx.restore();
     },
 
     drawSpots(ctx, t, b) {
@@ -912,14 +903,11 @@
       g.addColorStop(1, "#12072e");
       ctx.fillStyle = g;
       ctx.strokeStyle = "#e879f9";
-      ctx.shadowColor = "#e879f9";
-      ctx.shadowBlur = 10;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.roundRect(x, y, w, h, 8);
       ctx.fill();
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
       // Plattenteller
       [x + 62, x + w - 62].forEach((cx, di) => {
@@ -1145,10 +1133,7 @@
           ctx.font = `800 ${p.size}px sans-serif`;
           ctx.textAlign = "center";
           ctx.fillStyle = p.color;
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 8;
           ctx.fillText(p.ch, p.x, p.y);
-          ctx.shadowBlur = 0;
         } else {
           ctx.fillStyle = p.color;
           ctx.beginPath();
@@ -1199,14 +1184,15 @@
 
     noteIcon(ctx, x, y, move, r, alpha = 1) {
       ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.shadowColor = move.color;
-      ctx.shadowBlur = 12;
+      ctx.globalAlpha = alpha * 0.25;
       ctx.fillStyle = move.color;
+      ctx.beginPath();
+      ctx.arc(x, y, r + 4, 0, TAU);
+      ctx.fill();
+      ctx.globalAlpha = alpha;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, TAU);
       ctx.fill();
-      ctx.shadowBlur = 0;
       ctx.strokeStyle = "#fff";
       ctx.lineWidth = 2;
       ctx.stroke();
@@ -1254,12 +1240,13 @@
 
       // Zielring
       ctx.save();
-      ctx.strokeStyle = "#ffffff";
-      ctx.shadowColor = "#e879f9";
-      ctx.shadowBlur = 10 + 14 * b.pulse;
-      ctx.lineWidth = 3;
+      ctx.strokeStyle = "rgba(232, 121, 249, 0.35)";
+      ctx.lineWidth = 7;
       ctx.beginPath();
       ctx.arc(RING_X, LANE_Y, 20 + 3 * b.pulse, 0, TAU);
+      ctx.stroke();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 3;
       ctx.stroke();
       ctx.restore();
     },
@@ -1273,8 +1260,6 @@
       ctx.globalAlpha = a;
       ctx.translate(360, 188 - j.t * 24);
       ctx.scale(sc, sc);
-      ctx.shadowColor = j.color;
-      ctx.shadowBlur = 16;
       this.text(ctx, j.text, 0, 0, 30, j.color, "center", 900);
       if (j.key !== "miss" && j.mult > 1) this.text(ctx, `COMBO ×${j.mult}`, 0, 28, 13, "#fff", "center", 800);
       ctx.restore();
@@ -1306,13 +1291,10 @@
       ctx.fillStyle = g;
       ctx.strokeStyle = "#e879f9";
       ctx.lineWidth = 3;
-      ctx.shadowColor = "#e879f9";
-      ctx.shadowBlur = 20;
       ctx.beginPath();
       ctx.roundRect(px, py, pw, ph, 18);
       ctx.fill();
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
       this.text(ctx, "🎧 DJ-PULT", 360, py + 26, 20, "#fff", "center", 900);
       this.text(ctx, "Song wählen und Musik starten", 360, py + 48, 11, "#c4b5fd", "center", 700, "Rajdhani, sans-serif");
@@ -1354,23 +1336,16 @@
       ctx.fillStyle = g;
       ctx.strokeStyle = "#fde047";
       ctx.lineWidth = 3;
-      ctx.shadowColor = "#fde047";
-      ctx.shadowBlur = 20;
       ctx.beginPath();
       ctx.roundRect(px, py, pw, ph, 18);
       ctx.fill();
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
       this.text(ctx, "AUSWERTUNG", 360, py + 24, 18, "#fff", "center", 900);
       this.text(ctx, this.song.title, 360, py + 44, 11, "#c4b5fd", "center", 700, "Rajdhani, sans-serif");
 
       const gradeCol = { S: "#fde047", A: "#4ade80", B: "#38bdf8", C: "#fb923c", D: "#f87171" }[r.grade];
-      ctx.save();
-      ctx.shadowColor = gradeCol;
-      ctx.shadowBlur = 20;
       this.text(ctx, r.grade, px + 70, py + 110, 70 + 4 * Math.sin(t * 4), gradeCol, "center", 900);
-      ctx.restore();
 
       this.text(ctx, "PUNKTE", px + 150, py + 80, 11, "#c4b5fd", "left", 700);
       this.text(ctx, String(r.score), px + 150, py + 104, 28, "#fde047", "left", 900);
