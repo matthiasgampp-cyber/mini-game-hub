@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <title>Solitär – Steckhalma</title>
+  <meta
+    name="description"
+    content="Klassisches Solitär (Steckhalma / Peg Solitaire) als responsive Web-App mit Holzbrett-Optik, Drag & Drop, Undo, Tipp-Funktion und Bestleistungen."
+  />
+  <meta name="theme-color" content="#24160e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app" class="app">
+    <!-- Kopfzeile & Statusleiste -->
+    <header class="topbar">
+      <div class="brand-row">
+        <div class="brand">
+          <span class="brand-icon" aria-hidden="true">●</span>
+          <div class="brand-text">
+            <h1>Solitär</h1>
+            <span id="modeBadge" class="mode-badge">Klassisch · 33 Felder</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button
+            id="btnSound"
+            type="button"
+            class="icon-btn"
+            aria-label="Ton ein- oder ausschalten"
+            title="Ton an/aus (S)"
+          >
+            <span id="soundIcon" aria-hidden="true">🔊</span>
+          </button>
+          <button
+            id="btnMenu"
+            type="button"
+            class="icon-btn"
+            aria-label="Menü und Modus öffnen"
+            title="Menü & Modus"
+          >
+            <span aria-hidden="true">☰</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="stats-bar" aria-label="Spielstatus">
+        <div class="stat-pill">
+          <span class="stat-label">Steine</span>
+          <strong id="statPegs" class="stat-value">32</strong>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-label">Züge</span>
+          <strong id="statMoves" class="stat-value">0</strong>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-label">Zeit</span>
+          <strong id="statTime" class="stat-value">00:00</strong>
+        </div>
+        <div class="stat-pill stat-pill-best">
+          <span class="stat-label">Best</span>
+          <strong id="statBest" class="stat-value">–</strong>
+        </div>
+      </div>
+    </header>
+
+    <!-- Spielbrett-Bereich -->
+    <main class="board-stage" aria-label="Solitär Spielfeld">
+      <div class="board-frame">
+        <div class="board-groove">
+          <div
+            id="board"
+            class="board-grid"
+            role="grid"
+            aria-label="Solitär Spielbrett"
+          ></div>
+        </div>
+        <!-- Ebene für animierte Sprünge & gezogene Steine -->
+        <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
+      </div>
+    </main>
+
+    <!-- Aktionsleiste -->
+    <footer class="controls-bar">
+      <button id="btnUndo" type="button" class="action-btn" disabled title="Rückgängig (Z / U)">
+        <span class="btn-icon" aria-hidden="true">↶</span>
+        <span class="btn-label">Rückgängig</span>
+      </button>
+      <button id="btnHint" type="button" class="action-btn" title="Tipp anzeigen (H)">
+        <span class="btn-icon" aria-hidden="true">💡</span>
+        <span class="btn-label">Tipp</span>
+      </button>
+      <button id="btnRestart" type="button" class="action-btn action-btn-accent" title="Neustart (R)">
+        <span class="btn-icon" aria-hidden="true">↻</span>
+        <span class="btn-label">Neustart</span>
+      </button>
+    </footer>
+  </div>
+
+  <!-- Kurze Status-Meldung (Toast) -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- Spielende / Sieg / Deadlock Overlay -->
+  <div id="endModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="endTitle" hidden>
+    <div class="modal-card">
+      <div id="endIcon" class="modal-emblem" aria-hidden="true">🏆</div>
+      <h2 id="endTitle" class="modal-title">Perfekter Sieg!</h2>
+      <p id="endSubtitle" class="modal-subtitle">
+        Nur noch 1 Stein – genau in der Mitte!
+      </p>
+
+      <div class="end-summary">
+        <div class="summary-item">
+          <span>Reststeine</span>
+          <strong id="endPegs">1</strong>
+        </div>
+        <div class="summary-item">
+          <span>Züge</span>
+          <strong id="endMoves">31</strong>
+        </div>
+        <div class="summary-item">
+          <span>Zeit</span>
+          <strong id="endTime">00:00</strong>
+        </div>
+      </div>
+
+      <p id="endRecord" class="record-badge" hidden>★ Neue persönliche Bestleistung!</p>
+
+      <div class="modal-actions">
+        <button id="btnEndUndo" type="button" class="modal-btn modal-btn-secondary">
+          ↶ Letzten Zug rückgängig
+        </button>
+        <button id="btnEndRestart" type="button" class="modal-btn modal-btn-primary">
+          ↻ Neustart
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Neustart-Bestätigung -->
+  <div id="confirmModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" hidden>
+    <div class="modal-card modal-card-compact">
+      <h2 id="confirmTitle" class="modal-title">Spiel neu starten?</h2>
+      <p class="modal-subtitle">
+        Dein aktueller Fortschritt in dieser Partie geht verloren.
+      </p>
+      <div class="modal-actions modal-actions-row">
+        <button id="btnConfirmCancel" type="button" class="modal-btn modal-btn-secondary">
+          Abbrechen
+        </button>
+        <button id="btnConfirmOk" type="button" class="modal-btn modal-btn-primary">
+          Neustart
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menü & Modus-Umschalter -->
+  <div id="menuModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="menuTitle" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="menuTitle" class="modal-title">Menü & Spielmodus</h2>
+        <button id="btnCloseMenu" type="button" class="close-btn" aria-label="Menü schließen">✕</button>
+      </div>
+
+      <div class="menu-section">
+        <div class="section-label">Brett-Variante</div>
+        <div class="mode-list" role="radiogroup" aria-label="Brett-Variante">
+          <button
+            type="button"
+            class="mode-option"
+            data-mode="classic"
+            role="radio"
+            aria-checked="true"
+          >
+            <div class="mode-option-title">
+              <strong>Klassisch (33 Felder)</strong>
+              <span class="mode-pill">Standard</span>
+            </div>
+            <p class="mode-option-desc">
+              Englisches Kreuz · 32 Steine · Mittelfeld frei
+            </p>
+          </button>
+
+          <button
+            type="button"
+            class="mode-option"
+            data-mode="european"
+            role="radio"
+            aria-checked="false"
+          >
+            <div class="mode-option-title">
+              <strong>Europäisch (37 Felder)</strong>
+              <span class="mode-pill">Variante</span>
+            </div>
+            <p class="mode-option-desc">
+              Achteckiges Brett · 36 Steine · lösbare Startposition
+            </p>
+          </button>
+        </div>
+      </div>
+
+      <div class="menu-section rules-box">
+        <div class="section-label">Kurzregeln</div>
+        <p>
+          Springe waagerecht oder senkrecht über genau einen benachbarten Stein auf ein freies Feld. Der übersprungene Stein wird entfernt. Ziel ist es, am Ende nur noch <strong>1 Stein</strong> – idealerweise auf dem markierten Zielfeld – übrig zu behalten.
+        </p>
+      </div>
+
+      <div class="menu-footer">
+        <button id="btnResetBest" type="button" class="text-btn">
+          Bestleistung zurücksetzen
+        </button>
+        <button id="btnMenuDone" type="button" class="modal-btn modal-btn-primary">
+          Weiter spielen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <noscript>Bitte aktiviere JavaScript, um Solitär zu spielen.</noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
